@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+}
+
+/* Tooltip theme variables */
+:root {
+  --tooltip-bg: #ffffff;    /* Light mode background */
+  --tooltip-border: #ddd;   /* Light mode border */
+  --primary:#1863da !important;
+}
+
+[data-theme="dark"] {
+  --tooltip-bg:  #1d232a;   /* Dark mode background */
+  --tooltip-border: #1d232a;    /* Dark mode border */
+}
+
+/* Ultra-minimal custom scrollbar */
+
+/* Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  width: 6px;      /* thin */
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* no background */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb; /* very light gray (Tailwind: gray-200) */
+  border-radius: 9999px;     /* fully rounded */
+}
+
+::-webkit-scrollbar-button {
+  display: none; /* remove increment/decrement buttons */
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;                     /* thin scrollbar */
+  scrollbar-color: #e5e7eb transparent;      /* thumb | track */
+}
