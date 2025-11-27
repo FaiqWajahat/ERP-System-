@@ -17,9 +17,9 @@ const DashboardSidebar = ({sidebarOpen,setSidebarOpen}) => {
            <DashboardMenu/>
         </div>
           
-          <div className='flex-none px-2 pt-2 border-t border-base-300'>
+          {/* <div className='flex-none px-2 pt-2 border-t border-base-300'>
            <DashboardSidebarBottom/>
-          </div>
+          </div> */}
        
     </div>
   )

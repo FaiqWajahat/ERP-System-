@@ -1,65 +1,58 @@
 'use client';
-import { Archive, DollarSignIcon, User,Box } from 'lucide-react';
+import { FolderKanban, Users2, Package, CalendarCheck } from 'lucide-react';
 import React from 'react'
 import CountUp from 'react-countup';
 
 const DashboardTopStats = () => {
   return (
-    <div className="stats bg-base-100 w-full  stats-vertical md:stats-horizontal overflow-hidden shadow">
+    <div className="stats bg-base-100 w-full stats-vertical md:stats-horizontal overflow-hidden shadow">
       
-  <div className="stat ">
-    <div className="stat-figure  bg-base-300 rounded-md  p-2">
-      <DollarSignIcon className='w-8 h-8   text-primary'/>
-    </div>
-    <div className=" pb-1  ">Revenue</div>
-    <div className="stat-value">
-      <CountUp start={0} end={31} duration={2.75} suffix='k'></CountUp>
+      {/* Projects */}
+      <div className="stat">
+        <div className="stat-figure bg-base-300 rounded-md p-2">
+          <FolderKanban className="w-8 h-8 text-[var(--primary-color)]" />
+        </div>
+        <div className="pb-1">Projects</div>
+        <div className="stat-value">
+          <CountUp start={0} end={11} duration={2.75} />
+        </div>
       </div>
-   
-  </div>
 
-  <div className="stat">
-   
-       <div className="stat-figure  bg-base-300 rounded-md  p-2">
-      <Box className='w-8 h-8 text-primary'/>
-  
-    </div>
-    <div className="pb-1">Orders</div>
-    <div className="stat-value">
-        <CountUp start={0} end={21} duration={2.75} suffix='K'></CountUp>
-    </div>
-    
-  </div>
-   
+      {/* Employees */}
+      <div className="stat">
+        <div className="stat-figure bg-base-300 rounded-md p-2">
+          <Users2 className="w-8 h-8 text-[var(--primary-color)]" />
+        </div>
+        <div className="pb-1">Employees</div>
+        <div className="stat-value">
+          <CountUp start={0} end={110} duration={2.75} />
+        </div>
+      </div>
 
-<div className="stat">
-    <div className="stat-figure ">
-      <div className="stat-figure  bg-base-300 rounded-md  p-2">
-      <User className='w-8 h-8   text-primary'/>
-    </div>
-    </div>
-    <div className="pb-1">Users</div>
-    <div className="stat-value">
-        <CountUp start={0} end={4.2}  duration={2.75} suffix='k'></CountUp>
-    </div>
-   
-  </div>
+      {/* Assets */}
+      <div className="stat">
+        <div className="stat-figure bg-base-300 rounded-md p-2">
+          <Package className="w-8 h-8 text-[var(--primary-color)]" />
+        </div>
+        <div className="pb-1">Assets</div>
+        <div className="stat-value">
+          <CountUp start={0} end={20} duration={2.75} />
+        </div>
+      </div>
 
-  <div className="stat">
-    <div className="stat-figure text-base-content ">
-       <div className="stat-figure  bg-base-300 rounded-md p-2">
-      <Archive className='w-8 h-8   text-primary'/>
+      {/* Today Attendance */}
+      <div className="stat">
+        <div className="stat-figure bg-base-300 rounded-md p-2">
+          <CalendarCheck className="w-8 h-8 text-[var(--primary-color)]" />
+        </div>
+        <div className="pb-1">Today Attendance</div>
+        <div className="stat-value">
+          <CountUp start={0} end={80} duration={2.75} />
+        </div>
+      </div>
+
     </div>
-    </div>
-    <div className="pb-1">Products</div>
-    <div className="stat-value">
-        <CountUp start={0} end={80} duration={2.75} ></CountUp>
-    </div>
-   
-  </div>
-  {/* </div> */}
-</div>
   )
 }
 
-export default DashboardTopStats
+export default DashboardTopStats;

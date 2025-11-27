@@ -1,11 +1,12 @@
 'use client'
 import {  PanelRightOpen } from 'lucide-react';
+import Image from 'next/image';
 import React from 'react'
 
 const DashboardSidebarHead = ({sidebarOpen ,setSidebarOpen}) => {
   return (
       <div className='flex w-full justify-between items-center     ' > 
-      <h1 className='text-4xl font-extrabold  text-primary'>Pixvion</h1>
+    <Image src={"/logo.png"} width={150} height={150} alt="Logo" className='ml-2 mt-4'/>
          <div
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className=" p-1.5 cursor-pointer hover:bg-base-300 rounded-md flex items-center justify-center"

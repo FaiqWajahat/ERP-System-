@@ -140,14 +140,14 @@ const allProducts = [
   const breadData = [
      { name: 'Dashboard', href: '/Dashboard' },
     {
-      name: `${slug==='All'?slug:'Low Stock'} Products`,
-      href: `/Dashboard/Products/${slug} Products`,
+      name: `Assets`,
+      href: `/Dashboard/Products/All`,
     },
   ];
 
   return (
     <>
-     <DashboardPageHeader breadData={breadData} heading={`${slug==='All'?"All Products":"Low Stock Products"}`} />
+     <DashboardPageHeader breadData={breadData} heading={`Assets`} />
 
 <div className="w-full bg-base-100 rounded-xl shadow-lg p-4 lg:p-6">
   {/* Header Section */}

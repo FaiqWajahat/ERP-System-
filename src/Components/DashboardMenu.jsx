@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  ShoppingBag,
   Users,
+  ClipboardCheck,
   Package,
-  Settings,
+  
   Percent,
-  MessageSquare,
-  User,
-  Layers,
+
+  Settings,
+
+  BadgeCheck,
+  Warehouse,
 } from "lucide-react";
 
-// Menu config
+// Main Menu Config (corrected icons)
 const mainMenu = [
   {
     title: "Dashboard",
@@ -23,51 +25,62 @@ const mainMenu = [
     active: true,
   },
   {
-    title: "Orders",
-    icon: ShoppingBag,
+    title: "Projects",
+    icon: Warehouse,
+    href: "/Dashboard/Projects",
+  },
+  {
+    title: "Employees",
+    icon: Users, // 👈 Changed from ShoppingBag
     children: [
-      { title: "All Orders", href: "/Dashboard/Orders/All" },
-      { title: "Pending", href: "/Dashboard/Orders/Pending" },
-      { title: "Delivered", href: "/Dashboard/Orders/Delivered" },
+      { title: "Profile", href: "/Dashboard/Employees" },
+      { title: "Expenses", href: "/Dashboard/Employees/Expense" },
+      { title: "Tracking", href: "/Dashboard/Employees/Tracking" },
     ],
   },
   {
-    title: "Users",
-    icon: Users,
+    title: "Attendance",
+    icon: ClipboardCheck, 
     children: [
-      { title: "All Users", href: "/Dashboard/Users/All" },
-      { title: "Admins", href: "/Dashboard/Users/Admin" },
+      { title: "Mark Attendance", href: "/Dashboard/Attendance/Mark" },
+      { title: "View Record", href: "/Dashboard/Attendance" },
+      
     ],
   },
   {
-    title: "Products",
+    title: "Salary",
+    icon: Percent,
+    href: "/Dashboard/Salary",
+  },
+  {
+    title: "Assets",
     icon: Package,
-    children: [
-      { title: "All Products", href: "/Dashboard/Products/All" },
-      { title: "Low Stock", href: "/Dashboard/Products/LowStock" },
-    ],
+    href: "/Dashboard/Products/All",
   },
-  { title: "Categories", icon:Layers , href: "/Dashboard/Categories" },
-  { title: "Discounts", icon: Percent, href: "/Dashboard/Discounts/All" },
+  
+  
 ];
 
+// Account Menu Config (fine-tuned)
 const accountMenu = [
-  { title: "Messages", icon: MessageSquare, href: "/messages" },
+   { title: "Profile", icon: BadgeCheck, href: "/Dashboard/Profile" }, 
+ 
   {
     title: "Settings",
     icon: Settings,
     children: [
-      { title: "General", href: "/settings" },
-      { title: "Security", href: "/settings/security" },
+      { title: "Themes", href: "/Dashboard/Setting/Theme" },
+      { title: "Fonts", href: "/Dashboard/Setting/Fonts" },
     ],
   },
-  { title: "Profile", icon: User, href: "/profile" },
+  { title: "Users", icon: BadgeCheck, href: "/Dashboard/Users" }, 
+ 
 ];
 
 const SidebarMenu = ({ items, pathname }) => (
   <ul className="menu rounded-box w-full text-[15px] font-light">
     {items.map((item, index) => (
-      <li className="" key={index}>
+      <li key={index}>
         {item.children ? (
           <details>
             <summary className="flex items-center gap-2 w-full hover:bg-base-200 rounded-md px-2 py-1">
@@ -76,11 +89,11 @@ const SidebarMenu = ({ items, pathname }) => (
             </summary>
             <ul className="ml-5 border-l pl-3 space-y-1">
               {item.children.map((child, cIndex) => (
-                <li className="" key={cIndex}>
+                <li key={cIndex}>
                   <Link
                     href={child.href}
-                    className={`block px-2 py-1 rounded-md hover:bg-base-200 ${
-                      pathname === child.href ? "text-primary font-medium " : ""
+                    className={`block px-2 py-1  rounded-md hover:bg-base-200 ${
+                      pathname === child.href ? "text-[var(--primary-color)] font-medium" : ""
                     }`}
                   >
                     {child.title}
@@ -92,8 +105,8 @@ const SidebarMenu = ({ items, pathname }) => (
         ) : (
           <Link
             href={item.href || "#"}
-            className={`flex items-center gap-2 w-full px-2 py-1 rounded-md hover:bg-base-200 ${
-              pathname === item.href ? "text-primary font-medium " : ""
+            className={`flex items-center  text-md gap-2 w-full px-2 py-1 rounded-md hover:bg-base-200 ${
+              pathname === item.href ? "text-[var(--primary-color)] font-medium" : ""
             }`}
           >
             <item.icon className="w-4 h-4 shrink-0" />

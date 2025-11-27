@@ -1,24 +1,125 @@
 'use client';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardHeader from "@/Components/DashboardHeader";
 import DashboardSidebar from "@/Components/DasboardSidebar";
-import { Inter } from "next/font/google";
+import { 
+  Inter, 
+  Poppins, 
+  Roboto, 
+  Montserrat, 
+  Open_Sans, 
+  Lato, 
+  Nunito, 
+  Raleway, 
+  Source_Sans_3,
+  Playfair_Display 
+} from "next/font/google";
+import { useThemeStore } from "./Setting/Theme/page";
+import { useFontStore } from "@/stores/fontStore";
 
-
+// Configure Inter font (you forgot this one!)
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
+  variable: "--font-inter",
 });
 
-export default function AdminLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(false);
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-poppins",
+});
 
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-montserrat",
+});
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-opensans",
+});
+
+const lato = Lato({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-lato",
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-nunito",
+});
+
+const raleway = Raleway({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-raleway",
+});
+
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-sourcesans",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-playfair",
+});
+
+// Font mapping
+const fontMap = {
+  inter: inter.className,
+  poppins: poppins.className,
+  roboto: roboto.className,
+  montserrat: montserrat.className,
+  opensans: openSans.className,
+  lato: lato.className,
+  nunito: nunito.className,
+  raleway: raleway.className,
+  sourcesans: sourceSans.className,
+  playfair: playfair.className,
+};
+
+export default function AdminLayout({ children }) {
+  const { theme, setTheme } = useThemeStore();
+  const { font, setFont } = useFontStore();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Initialize theme and font from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem("app-theme") || "light";
+      const savedFont = localStorage.getItem("app-font") || "inter";
+      
+      setTheme(savedTheme);
+      setFont(savedFont);
+    } catch (e) {
+      console.warn("Error loading preferences:", e);
+    }
+  }, [setTheme, setFont]);
+
+  // Get the current font className
+  const currentFontClass = fontMap[font] || inter.className;
+
+  // Combine all font variables for CSS
+  const allFontVariables = `${inter.variable} ${poppins.variable} ${roboto.variable} ${montserrat.variable} ${openSans.variable} ${lato.variable} ${nunito.variable} ${raleway.variable} ${sourceSans.variable} ${playfair.variable}`;
 
   return (
     <div
-      data-theme={theme ? "dark" : "light"}
-      className={`${inter.className} flex h-screen w-full overflow-hidden`}
+      data-theme={theme}
+      className={`${currentFontClass} ${allFontVariables} flex h-screen w-full overflow-hidden`}
     >
       {/* Sidebar */}
       <div
@@ -38,8 +139,6 @@ export default function AdminLayout({ children }) {
           <DashboardHeader
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
-            theme={theme}
-            setTheme={setTheme}
           />
         </header>
 
@@ -51,10 +150,9 @@ export default function AdminLayout({ children }) {
         {/* Footer */}
         <footer className="h-10 flex items-center justify-center bg-base-100 text-xs text-gray-500 shrink-0">
           Made with love by{" "}
-          <span className="text-primary ml-1 font-bold">Pixvion</span>
+          <span className="text-[#0885f3] ml-1 font-bold">Pixvion</span>
         </footer>
       </div>
     </div>
   );
-
 }

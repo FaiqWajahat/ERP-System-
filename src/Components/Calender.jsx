@@ -69,9 +69,9 @@ const Calendar = () => {
               }
               className={`flex sm-py-0 md-py-2 lg-py-0 justify-center items-center cursor-pointer transition-colors duration-200 rounded-md   text-sm md:text-base ${
                 isSelected
-                  ? "bg-primary text-white"
+                  ? "bg-[var(--primary-color)] text-white"
                   : isToday
-                  ? "bg-primary/30 text-primary font-semibold"
+                  ? "bg-[var(--primary-color)]/30 text-[var(--primary-color)] font-semibold"
                   : "hover:bg-base-300"
               }`}
             >

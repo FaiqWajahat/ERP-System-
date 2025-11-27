@@ -7,10 +7,7 @@ const BreadCrumps = ({ breadData }) => {
     <>
       <div className="breadcrumbs text-sm items-center ">
         <ul>
-          <li>
-            
-                <Link href={'/'}>Home</Link>
-          </li>
+          
           {breadData.map((item, index) => (
             <li key={index}>
               

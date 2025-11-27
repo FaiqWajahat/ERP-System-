@@ -1,10 +1,21 @@
 "use client";
 
 import { Menu, Search } from "lucide-react";
+import Image from "next/image";
 
 import React from "react";
+import CustomDropdown from "./CustomDropdown";
 
-const DashboardHeader = ({ sidebarOpen, setSidebarOpen, theme, setTheme }) => {
+const DashboardHeader = ({ sidebarOpen, setSidebarOpen }) => {
+const [language, setLanguage] = React.useState('English');
+
+const languages = [
+  'English',
+  'Urdu',
+  'Arabic',
+ 
+];
+
   return (
     <div className="navbar bg-base-100 shadow-sm px-3">
       <div className="flex-none hover:bg-base-300 p-1 rounded-sm">
@@ -12,20 +23,10 @@ const DashboardHeader = ({ sidebarOpen, setSidebarOpen, theme, setTheme }) => {
         className="cursor-pointer "/>
       </div>
       <div className="flex-1 ml-4">
-       <h1 className="text-4xl font-extrabold text-primary" >Pixvion</h1>
+       <Image src={"/logo.png"} alt="Logo" width={120} height={60} />
       </div>
       <div className="navbar-end gap-4 ">
-        <div className="form-control">
-          <label className="label cursor-pointer">
-            
-            <input
-              type="checkbox"
-              className="toggle toggle-primary"
-              checked={theme}
-              onChange={() => setTheme(!theme)}
-            />
-          </label>
-        </div>
+       <CustomDropdown value={language} setValue={setLanguage} dropdownMenu={languages}  />
 
         <div className="dropdown dropdown-end">
           <div

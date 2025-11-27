@@ -38,10 +38,10 @@ export default function Brandloader({ duration = 3000 }) {
     >
       {/* Brand Name with Bounce */}
       <h1
-        className="text-6xl md:text-9xl font-black text-primary tracking-tight"
+        className="text-6xl md:text-9xl font-black text-[#1C8BEE] tracking-tight"
         style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
       >
-        {"Pxvion".split("").map((letter, index) => (
+        {"Pixvion".split("").map((letter, index) => (
           <span
             key={index}
             className="inline-block bounce"

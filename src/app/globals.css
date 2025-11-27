@@ -7,7 +7,8 @@
 :root {
   --tooltip-bg: #ffffff;    /* Light mode background */
   --tooltip-border: #ddd;   /* Light mode border */
-  --primary:#1863da !important;
+  --primary:#A99984 !important;
+  --primary-color:#A99984 !important
 }
 
 [data-theme="dark"] {
