@@ -1,6 +1,7 @@
 'use client'
 
 import CustomDropdown from "@/Components/CustomDropdown";
+import CustomLoader from "@/Components/CustomLoader";
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
 import DashboardSearch from "@/Components/DashboardSearch";
 import EmployeeTable from "@/Components/EmployeeTable";
@@ -86,6 +87,8 @@ const Page = () => {
 
     return filtered;
   }, [employee, selectedStatus, searchQuery]);
+
+  if (isLoading) return <CustomLoader/> 
 
   return (
     <>

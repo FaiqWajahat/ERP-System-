@@ -11,6 +11,8 @@ import {
   RefreshCw,
   ChevronDown,
   Check,
+  BriefcaseBusiness,
+  FileText,
 } from "lucide-react";
 import axios from "axios";
 import { errorToast } from "@/lib/toast";
@@ -551,8 +553,8 @@ const EmployeeExpenseDetails = () => {
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
-    <div className="min-h-screen bg-base-200">
-      <div className="w-full mx-auto px-3 md:px-4 py-4 md:py-4 lg:py-4">
+    <div className="">
+      <div className="w-full ">
         {/* Modals */}
         <AddExpenseModal
           isOpen={isModalOpen}
@@ -568,54 +570,7 @@ const EmployeeExpenseDetails = () => {
           isDeleting={isDeleting}
         />
 
-        {/* Header */}
-        <div className="card bg-base-100 shadow-md mb-4 md:mb-6">
-          <div className="card-body p-3 md:p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-2">
-                <button
-                  onClick={() => router.back()}
-                  className="btn btn-ghost btn-xs btn-circle flex-shrink-0"
-                  aria-label="Go back"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="min-w-0">
-                  <h1 className="text-base md:text-lg font-bold text-base-content truncate">
-                    {employee.name}
-                  </h1>
-                  <p className="text-xs text-base-content/60 mt-0.5">
-                    <span className="text-[var(--primary-color)]">{employee.role}</span> • Iqama: {employee.iqamaNumber}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="btn btn-sm btn-ghost gap-2"
-                  aria-label="Refresh"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-                  />
-                </button>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="btn btn-sm gap-2 rounded-sm text-white flex-1 sm:flex-initial"
-                  style={{ backgroundColor: "var(--primary-color)" }}
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Expense</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 md:mb-6">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 md:mb-6">
           <div className="stats shadow-md bg-base-100">
             <div className="stat py-3">
               <div className="stat-title text-xs">Total Liability</div>
@@ -661,8 +616,38 @@ const EmployeeExpenseDetails = () => {
           </div>
         </div>
 
+      
+
+        {/* Employee Identity Card */}
+              <div className="bg-base-100 shadow-sm rounded-lg p-6 border border-base-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                
+                  <div>
+                    <h2 className="text-2xl font-bold">{employee?.name}</h2>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-70 mt-1">
+                      <span className="flex items-center gap-1"><BriefcaseBusiness size={14}/> {employee?.role || 'N/A'}</span>
+                      <span className="flex items-center gap-1"><FileText size={14}/> Iqama: {employee?.iqamaNumber}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 w-full md:w-auto">
+                   <button onClick={() => router.back()} className="btn btn-outline btn-sm">
+                      <ArrowLeft size={16} /> Back
+                   </button>
+                   <button 
+                      onClick={() => setIsModalOpen(true)}
+                      className={`btn btn-sm text-white border-none bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90 }`}
+                   >
+                      <Plus size={16} /> Add Expense
+                   </button>
+                </div>
+              </div>
+      
+       
+
         {/* Expense Table */}
-        <div className="card bg-base-100 shadow-md">
+        <div className="card bg-base-100 shadow-md ">
           <div className="card-body p-3 md:p-4">
             <div className="py-3">
               <h2 className="text-sm md:text-base font-semibold text-base-content">

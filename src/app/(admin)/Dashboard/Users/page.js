@@ -174,7 +174,11 @@ export default function UsersPage() {
     }
   };
 
-  return (
+  if(isFetchingUsers) return <CustomLoader/>
+
+  
+
+  else return (
     <>
       <DashboardPageHeader breadData={breadData} heading="Users" />
 

@@ -17,7 +17,7 @@ import React from 'react'
     };
 
     const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      name || 'NA'
+      name ?? 'NA'
     )}&background=random&size=${sizePixels[size]}&bold=true&format=svg`;
 
     return (

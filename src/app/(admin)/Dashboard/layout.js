@@ -144,7 +144,10 @@ export default function AdminLayout({ children }) {
 
         {/* Content */}
         <main className="flex-1 min-w-0 min-h-0 overflow-auto lg:px-6 px-4 py-4 bg-base-200">
-          {children}
+          <div className="max-w-7xl m-auto">
+              {children}
+          </div>
+        
         </main>
 
         {/* Footer */}
