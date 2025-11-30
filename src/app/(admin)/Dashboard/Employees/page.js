@@ -88,7 +88,7 @@ const Page = () => {
     return filtered;
   }, [employee, selectedStatus, searchQuery]);
 
-  if (isLoading) return <CustomLoader/> 
+  if (isLoading) return <CustomLoader text={"Loading employees..."}/> 
 
   return (
     <>

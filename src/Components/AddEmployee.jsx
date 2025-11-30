@@ -1,10 +1,12 @@
 'use client'
 import React, { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { errorToast, sucessToast } from "@/lib/toast";
+import { useRouter } from "next/navigation";
 
 const AddEmployee = () => {
+  const route=useRouter()
   const [isNationalityOpen, setIsNationalityOpen] = useState(false);
   const [selectedNationality, setSelectedNationality] = useState("");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -146,6 +148,22 @@ const AddEmployee = () => {
   return (
     <div className="py-8 px-4">
       <div className="max-w-6xl mx-auto">
+            <div className="mb-6 mx-4 flex items-center gap-4 justify-between">
+                  <div>
+                  
+                    <p className="text-sm text-base-content/60 mt-1 hidden md:block">
+                      Add employee information and details
+                    </p>
+                  </div>
+                  <button
+                    onClick={()=>{route.back()}}
+                    className="btn btn-ghost btn-sm gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </button>
+                  
+                </div>
         <div className="">
           <div className="p-4">
             {/* Form */}

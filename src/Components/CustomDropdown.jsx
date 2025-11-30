@@ -41,7 +41,7 @@ const CustomDropdown = ({ value, setValue, dropdownMenu}) => {
       {open && (
 
 
-        <div className="absolute -right-10 mt-2 w-44 bg-base-100 shadow-md rounded-md z-50">
+        <div className="absolute -right-5 mt-2 w-44 bg-base-100 shadow-md rounded-md z-50">
           <ul className="py-1 text-sm max-h-56 overflow-y-auto">
 
             {

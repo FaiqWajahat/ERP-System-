@@ -4,6 +4,7 @@ import { ChevronDown, ArrowLeft, Loader2 } from "lucide-react";
 import axios from "axios";
 import { errorToast, sucessToast } from "@/lib/toast";
 import { useRouter, useParams } from "next/navigation";
+import CustomLoader from "./CustomLoader";
 
 const EditEmployee = () => {
   const router = useRouter();
@@ -210,15 +211,7 @@ const EditEmployee = () => {
   // Loading state while fetching data
   if (isFetchingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-4 border-base-300"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-[var(--primary-color)] border-t-transparent animate-spin"></div>
-          </div>
-          <p className="text-sm text-base-content/60 font-medium">Loading employee data...</p>
-        </div>
-      </div>
+     <CustomLoader text={"Loading employee info..."}/>
     );
   }
 

@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 export default function CustomLoader({ text, brandName = "Seven Directions" }) {
   return (
     // changed from 'fixed h-screen' to 'absolute inset-0'
-    <div className=" z-50 flex items-center h-[calc(100vh-10vh)] justify-center bg-base-100 backdrop-blur-[2px] rounded-lg transition-all duration-300">
+    <div className=" z-50 w-full flex items-center h-[calc(100vh-10vh)] justify-center bg-base-100 backdrop-blur-[2px] rounded-lg transition-all duration-300">
       
       <div className="flex flex-col items-center gap-3 p-4">
         

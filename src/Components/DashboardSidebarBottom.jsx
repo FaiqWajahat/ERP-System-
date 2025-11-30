@@ -19,8 +19,8 @@ const DashboardSidebarBottom = () => {
           </div>
 
           <div className='flex-1 ml-2'>
-            <div className='text-sm font-semibold text-primary'>John Doe</div>
-            <div className='text-xs text-base-content'>Admin</div>
+            <div className='text-sm font-semibold text-[var(--primary-color)]'>John Doe</div>
+            <div className='text-xs  tracking-tight text-base-content/40 '>johndoe@gmail.com</div>
           </div>
           <div className='flex-none'>
   <div className="dropdown dropdown-top">

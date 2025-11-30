@@ -131,16 +131,21 @@ const EmployeeExpenseList = () => {
       <div className="w-full bg-base-100 rounded-xl shadow-lg p-4 lg:p-6 mt-6">
         <div className="w-full flex flex-col gap-4 md:flex-row items-center justify-between mb-6 md:px-2">
           <div className="w-full md:w-auto justify-center md:justify-start flex">
+          <p className="text-sm text-base-content/60 mt-1">
+    Choose employee to track  expense records.
+  </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-full md:w-auto justify-center md:justify-start flex">
             <DashboardSearch 
               placeholder="Search Employee" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="flex items-center gap-4">
             <div>
-              <label className="font-medium text-sm mr-2">Status:</label>
+             
               <CustomDropdown 
                 value={selectedStatus} 
                 setValue={setSelectedStatus} 

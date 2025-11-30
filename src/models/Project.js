@@ -1,54 +1,95 @@
 import mongoose from "mongoose";
 
-const projectSchema = new mongoose.Schema({
-  projectName: {
+
+const ExpenseSchema = new mongoose.Schema({
+  description: {
     type: String,
-    required: true,
+    required: [true, "Expense description is required"],
+    trim: true,
   },
-  location: String,
-  startDate: {
+  amount: {
+    type: Number,
+    required: [true, "Expense amount is required"],
+    min: 0,
+  },
+  date: {
     type: Date,
     required: true,
+    default: Date.now,
   },
-  details: String,
 
-  // DAILY EXPENSES
-  expenses: [
-    {
-      date: { type: Date, required: true },
-      title: { type: String, required: true },
-      amount: { type: Number, required: true },
-      notes: String,
+}, { timestamps: true }); 
+
+// 2. Define Income Sub-Schema
+const IncomeSchema = new mongoose.Schema({
+  description: {
+    type: String,
+    required: [true, "Income description is required"],
+    trim: true,
+  },
+  amount: {
+    type: Number,
+    required: [true, "Income amount is required"],
+    min: 0,
+  },
+  date: {
+    type: Date,
+    required: true,
+    default: Date.now,
+  },
+}, { timestamps: true });
+
+
+const ProjectSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Project name is required"],
+      trim: true,
     },
-  ],
-
-  // AMOUNT RECEIVED DAILY
-  payments: [
-    {
-      date: { type: Date, required: true },
-      amount: { type: Number, required: true },
-      notes: String,
+    location: {
+      type: String,
+      required: false, // Optional based on your UI
+      trim: true,
     },
-  ],
-
-  // LABOUR ASSIGNED DAILY
-  labourAssigned: [
-    {
-      date: { type: Date, required: true },
-      employees: [
-        { type: mongoose.Schema.Types.ObjectId, ref: "Employee" }
-      ],
+    clientName: {
+      type: String,
+      required: false,
+      trim: true,
     },
-  ],
-
-  // AUTO CALCULATED SUMMARY
-  summary: {
-    totalExpenses: { type: Number, default: 0 },
-    totalReceived: { type: Number, default: 0 },
-    remaining: { type: Number, default: 0 },
-    profitOrLoss: { type: Number, default: 0 },
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    estimatedBudget: {
+      type: Number,
+      default: 0,
+    },
+    progress: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    status: {
+      type: String,
+     enum: ['active', 'completed', 'on_hold'],
+    default: 'active',
+    },
+    details:{
+        type:String,
+        required:false
+    },
+    
+    expenses: [ExpenseSchema],
+    income: [IncomeSchema],
+  },
+  {
+    timestamps: true, 
   }
-});
+);
 
-export default mongoose.models.Project ||
-  mongoose.model("Project", projectSchema);
+// Prevent model overwrite error in Next.js hot reloading
+const Project = mongoose.models.Project || mongoose.model("Project", ProjectSchema);
+
+export default Project;

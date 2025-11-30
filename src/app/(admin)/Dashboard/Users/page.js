@@ -174,7 +174,7 @@ export default function UsersPage() {
     }
   };
 
-  if(isFetchingUsers) return <CustomLoader/>
+  if(isFetchingUsers) return <CustomLoader text={"Loading users..."}/>
 
   
 
