@@ -1,145 +1,207 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import axios from "axios";
 import {
   Calendar,
   CheckCircle,
   XCircle,
   Clock,
   Save,
-  ArrowLeft,
   Search,
   ChevronDown,
   Edit2,
+  Building,
+  User,
+  Trash2,
+  Filter,
+  Check,
+  PieChart,
+  Users
 } from "lucide-react";
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
+import Avatar from "@/Components/Avatar";
 
-// API Configuration - Replace with your actual endpoints
+// API Configuration
 const API_ENDPOINTS = {
   GET_ATTENDANCE: "/api/attendance",
   SAVE_ATTENDANCE: "/api/attendance",
-  GET_EMPLOYEES: "/api/employees",
-  GET_PROJECTS: "/api/projects",
+  GET_EMPLOYEES: "/api/attendance/employee",
+  GET_PROJECTS: "/api/attendance/project",
 };
 
-const ProjectDropdown = ({ value, onChange, projects, idLabel = "project" }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+// --- DROPDOWNS (Kept same as previous version) ---
+const ModernProjectDropdown = ({ value, onChange, projects }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
-    const onDocClick = (e) => {
-      if (!ref.current || !ref.current.contains(e.target)) setOpen(false);
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
     };
-    const onEsc = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onEsc);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="relative inline-block" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((s) => !s)}
-        className="btn btn-sm bg-transparent border border-[var(--primary-color)] rounded-sm w-48 flex items-center justify-between text-xs h-10"
+    <div className="relative w-48" ref={dropdownRef}>
+      <div
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setSearchTerm("");
+        }}
+        className={`
+          flex items-center justify-between w-full px-3 py-2 text-xs font-medium 
+          border rounded-md cursor-pointer transition-all duration-200
+          ${value 
+            ? "bg-[var(--primary-color)]/5 border-[var(--primary-color)] text-[var(--primary-color)]" 
+            : "bg-base-100 border-base-300 hover:border-base-400 text-base-content/60"
+          }
+        `}
       >
-        <span className="truncate text-left flex-1">
-          {value ? value.name : "Select Project"}
+        <span className="truncate flex items-center gap-2">
+           <Building className="w-3.5 h-3.5" />
+           {value ? value.name : "Assign Project"}
         </span>
-        <ChevronDown className="w-4 h-4 opacity-70 ml-1 flex-shrink-0" />
-      </button>
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </div>
 
-      {open && (
-        <ul className="absolute z-50 mt-1 w-48 bg-base-100 shadow-lg rounded-sm max-h-48 overflow-y-auto border border-base-300">
-          {projects.map((project) => (
-            <li key={project.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  onChange(project);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-base-200 ${
-                  value?.id === project.id ? "bg-base-200" : ""
-                }`}
-              >
-                {project.name}
-              </button>
-            </li>
-          ))}
-        </ul>
+      {isOpen && (
+        <div className="absolute z-50 w-64 mt-1 bg-base-100 border border-base-200 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-100 origin-top-left left-0">
+          <div className="p-2 border-b border-base-100 sticky top-0 bg-base-100 rounded-t-lg">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-base-content/40" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="Find project..."
+                className="w-full pl-8 pr-2 py-1.5 text-xs bg-base-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--primary-color)]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="max-h-48 overflow-y-auto p-1 custom-scrollbar">
+            {filteredProjects.length > 0 ? (
+              filteredProjects.map((project) => (
+                <div
+                  key={project._id}
+                  onClick={() => {
+                    onChange(project);
+                    setIsOpen(false);
+                  }}
+                  className={`
+                    flex items-center justify-between px-3 py-2 text-xs rounded-md cursor-pointer transition-colors
+                    ${value?._id === project._id ? "bg-[var(--primary-color)]/10 text-[var(--primary-color)]" : "hover:bg-base-200"}
+                  `}
+                >
+                  <span>{project.name}</span>
+                  {value?._id === project._id && <Check className="w-3 h-3" />}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-center text-xs text-base-content/40">
+                No projects found
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
-const StatusDropdown = ({ value, onChange, idLabel = "status" }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const options = ["Present", "Absent", "Leave"];
+const ModernStatusDropdown = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const statusConfig = {
+    Present: { color: "text-success", bg: "bg-success/10", border: "border-success/20", icon: CheckCircle },
+    Absent: { color: "text-error", bg: "bg-error/10", border: "border-error/20", icon: XCircle },
+    Leave: { color: "text-warning", bg: "bg-warning/10", border: "border-warning/20", icon: Clock },
+    Default: { color: "text-base-content/60", bg: "bg-base-100", border: "border-base-300", icon: ChevronDown }
+  };
+
+  const currentStyle = statusConfig[value] || statusConfig.Default;
+  const Icon = currentStyle.icon;
 
   useEffect(() => {
-    const onDocClick = (e) => {
-      if (!ref.current || !ref.current.contains(e.target)) setOpen(false);
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
     };
-    const onEsc = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onEsc);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="relative inline-block" ref={ref}>
+    <div className="relative w-32" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setOpen((s) => !s)}
-        className="btn btn-sm bg-transparent border border-[var(--primary-color)] rounded-sm w-32 flex items-center justify-between text-xs h-10"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          flex items-center justify-between w-full px-3 py-2 text-xs font-semibold 
+          border rounded-md transition-all duration-200
+          ${value ? `${currentStyle.bg} ${currentStyle.border} ${currentStyle.color}` : "bg-base-100 border-base-300 hover:border-base-400"}
+        `}
       >
-        <span className="truncate">{value || "Select"}</span>
-        <ChevronDown className="w-4 h-4 opacity-70 ml-2" />
+        <div className="flex items-center gap-2">
+           {value && <Icon className="w-3.5 h-3.5" />}
+           <span>{value || "Select"}</span>
+        </div>
+        {!value && <ChevronDown className="w-3.5 h-3.5 opacity-50" />}
       </button>
 
-      {open && (
-        <ul className="absolute z-50 mt-1 w-32 bg-base-100 shadow-lg rounded-sm border border-base-300">
-          {options.map((opt) => (
-            <li key={opt}>
-              <button
-                type="button"
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-base-100 border border-base-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+          {["Present", "Absent", "Leave"].map((option) => {
+             const style = statusConfig[option];
+             const OptIcon = style.icon;
+             return (
+              <div
+                key={option}
                 onClick={() => {
-                  onChange(opt);
-                  setOpen(false);
+                  onChange(option);
+                  setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-base-200 ${
-                  opt === value ? "bg-base-200" : ""
-                }`}
+                className={`
+                  flex items-center gap-2 px-3 py-2.5 text-xs cursor-pointer hover:bg-base-200 transition-colors
+                  ${value === option ? "bg-base-100 font-bold" : ""}
+                `}
               >
-                {opt}
-              </button>
-            </li>
-          ))}
-        </ul>
+                <OptIcon className={`w-3.5 h-3.5 ${style.color}`} />
+                <span>{option}</span>
+              </div>
+             );
+          })}
+        </div>
       )}
     </div>
   );
 };
+
+
+// --- MAIN PAGE COMPONENT ---
 
 export default function MarkAttendancePage() {
   const todayISO = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(todayISO);
+
+  // Data States
   const [employees, setEmployees] = useState([]);
   const [projects, setProjects] = useState([]);
   const [attendance, setAttendance] = useState({});
   const [projectAssignments, setProjectAssignments] = useState({});
+
+  // UI States
   const [searchQuery, setSearchQuery] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,32 +209,23 @@ export default function MarkAttendancePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [attendanceMarked, setAttendanceMarked] = useState(false);
 
+  // Initial Load
   useEffect(() => {
     fetchEmployees();
     fetchProjects();
   }, []);
 
+  // Date Change
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && employees.length > 0) {
       fetchAttendanceForDate(selectedDate);
     }
-  }, [selectedDate]);
+  }, [selectedDate, employees]);
 
   const fetchEmployees = async () => {
     try {
-      // REPLACE WITH: const response = await fetch(API_ENDPOINTS.GET_EMPLOYEES);
-      // const data = await response.json();
-      // setEmployees(data);
-      
-      const dummyEmployees = [
-        { id: 1, name: "Ali Khan", iqama: "1234567890", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ali" },
-        { id: 2, name: "Ahmed Raza", iqama: "0987654321", image: null },
-        { id: 3, name: "Sara Ahmed", iqama: "1122334455", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sara" },
-        { id: 4, name: "Fatima Ali", iqama: "2233445566", image: null },
-        { id: 5, name: "Hassan Sheikh", iqama: "3344556677", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Hassan" },
-        { id: 6, name: "Zainab Malik", iqama: "4455667788", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zainab" },
-      ];
-      setEmployees(dummyEmployees);
+      const response = await axios.get(API_ENDPOINTS.GET_EMPLOYEES);
+      setEmployees(Array.isArray(response.data) ? response.data : response.data.employees || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
     }
@@ -180,19 +233,8 @@ export default function MarkAttendancePage() {
 
   const fetchProjects = async () => {
     try {
-      // REPLACE WITH: const response = await fetch(API_ENDPOINTS.GET_PROJECTS);
-      // const data = await response.json();
-      // setProjects(data);
-      
-      const dummyProjects = [
-        { id: 1, name: "Website Redesign" },
-        { id: 2, name: "Mobile App Development" },
-        { id: 3, name: "Marketing Campaign Q4" },
-        { id: 4, name: "Cloud Migration" },
-        { id: 5, name: "ERP Implementation" },
-        { id: 6, name: "Security Audit" },
-      ];
-      setProjects(dummyProjects);
+      const response = await axios.get(API_ENDPOINTS.GET_PROJECTS);
+      setProjects(Array.isArray(response.data) ? response.data : response.data.projects || []);
     } catch (error) {
       console.error("Error fetching projects:", error);
     }
@@ -201,25 +243,24 @@ export default function MarkAttendancePage() {
   const fetchAttendanceForDate = async (date) => {
     setIsLoading(true);
     try {
-      // REPLACE WITH: 
-      // const response = await fetch(`${API_ENDPOINTS.GET_ATTENDANCE}?date=${date}`);
-      // const data = await response.json();
-      // Expected format: { marked: boolean, attendance: [{employeeId, status, projectId, projectName}] }
-      
-      await new Promise(r => setTimeout(r, 500));
-      
-      const isToday = date === todayISO;
-      const alreadyMarked = isToday && Math.random() > 0.5;
-      
-      if (alreadyMarked) {
-        const attendanceData = {};
-        const projectData = {};
-        employees.slice(0, 3).forEach((emp) => {
-          attendanceData[emp.id] = "Present";
-          projectData[emp.id] = projects[0];
+      const response = await axios.get(API_ENDPOINTS.GET_ATTENDANCE, { params: { date } });
+      const { marked, records } = response.data;
+
+      if (marked && Array.isArray(records) && records.length > 0) {
+        const attendanceMap = {};
+        const projectMap = {};
+
+        records.forEach((record) => {
+          const empId = record.employeeId;
+          attendanceMap[empId] = record.status;
+          if (record.projectId) {
+            const proj = projects.find((p) => p._id === record.projectId);
+            projectMap[empId] = proj ? proj : { _id: record.projectId, name: record.projectName };
+          }
         });
-        setAttendance(attendanceData);
-        setProjectAssignments(projectData);
+
+        setAttendance(attendanceMap);
+        setProjectAssignments(projectMap);
         setAttendanceMarked(true);
         setIsEditMode(false);
       } else {
@@ -240,18 +281,25 @@ export default function MarkAttendancePage() {
 
   const filteredEmployees = employees.filter((emp) => {
     const q = searchQuery.trim().toLowerCase();
-    return q === "" || emp.name.toLowerCase().includes(q) || emp.iqama.toLowerCase().includes(q);
+    return (
+      q === "" ||
+      emp.name.toLowerCase().includes(q) ||
+      (emp.iqamaNumber && emp.iqamaNumber.toLowerCase().includes(q))
+    );
   });
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: filteredEmployees.length,
-    present: filteredEmployees.filter((e) => attendance[e.id] === "Present").length,
-    absent: filteredEmployees.filter((e) => attendance[e.id] === "Absent").length,
-    leave: filteredEmployees.filter((e) => attendance[e.id] === "Leave").length,
-  };
+    present: filteredEmployees.filter((e) => attendance[e._id] === "Present").length,
+    absent: filteredEmployees.filter((e) => attendance[e._id] === "Absent").length,
+    leave: filteredEmployees.filter((e) => attendance[e._id] === "Leave").length,
+  }), [filteredEmployees, attendance]);
 
   const completionPercentage = filteredEmployees.length
-    ? Math.round((Object.keys(attendance).filter((id) => filteredEmployees.some((fe) => fe.id === Number(id))).length / filteredEmployees.length) * 100)
+    ? Math.round(
+        (Object.keys(attendance).filter((id) => filteredEmployees.some((fe) => fe._id === id)).length /
+          filteredEmployees.length) * 100
+      )
     : 0;
 
   const updateStatus = (id, status) => {
@@ -265,7 +313,7 @@ export default function MarkAttendancePage() {
   const markAllAs = (status) => {
     const newAtt = { ...attendance };
     filteredEmployees.forEach((emp) => {
-      newAtt[emp.id] = status;
+      newAtt[emp._id] = status;
     });
     setAttendance(newAtt);
   };
@@ -278,38 +326,42 @@ export default function MarkAttendancePage() {
   const handleSave = async () => {
     if (filteredEmployees.length === 0) return;
 
-    const payload = {
-      date: selectedDate,
-      attendance: filteredEmployees.map((emp) => ({
-        employeeId: emp.id,
-        employeeName: emp.name,
-        iqama: emp.iqama,
-        status: attendance[emp.id] || "Absent",
-        projectId: projectAssignments[emp.id]?.id || null,
-        projectName: projectAssignments[emp.id]?.name || null,
-      })),
-    };
+    const payloadData = filteredEmployees
+      .map((emp) => {
+        const status = attendance[emp._id];
+        if (!status) return null;
+        return {
+          employeeId: emp._id,
+          employeeName: emp.name,
+          iqama: emp.iqamaNumber,
+          status: status,
+          projectId: projectAssignments[emp._id]?._id || null,
+          projectName: projectAssignments[emp._id]?.name || "No project",
+        };
+      })
+      .filter(Boolean);
+
+    if (payloadData.length === 0) {
+      alert("Please mark at least one employee.");
+      return;
+    }
 
     setIsSaving(true);
     try {
-      // REPLACE WITH:
-      // const response = await fetch(API_ENDPOINTS.SAVE_ATTENDANCE, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(payload)
-      // });
-      // if (!response.ok) throw new Error('Failed to save');
-      
-      await new Promise((r) => setTimeout(r, 1000));
-      console.log("Attendance payload:", payload);
-      
-      setAttendanceMarked(true);
-      setIsEditMode(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      const response = await axios.post(API_ENDPOINTS.SAVE_ATTENDANCE, {
+        date: selectedDate,
+        attendance: payloadData,
+      });
+
+      if (response.data.success) {
+        setAttendanceMarked(true);
+        setIsEditMode(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
     } catch (error) {
-      console.error("Error saving attendance:", error);
-      alert("Failed to save attendance");
+      console.error("Error saving:", error);
+      alert("Failed to save.");
     } finally {
       setIsSaving(false);
     }
@@ -320,199 +372,240 @@ export default function MarkAttendancePage() {
     setAttendanceMarked(false);
   };
 
-  const searchTimeout = useRef(null);
-  const onSearchChange = (val) => {
-    clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => setSearchQuery(val), 200);
-  };
-
   const canEdit = !attendanceMarked || isEditMode;
+  const breadData = [{ name: "Dashboard", href: "/Dashboard" }, { name: "Mark Attendance", href: "/Dashboard/Attendance/Mark" }];
 
-  const breadData = [
-    { name: "Dashboard", href: "/Dashboard" },
- 
-    { name: "Mark Attendance", href: "/Dashboard/Attendance/Mark" },
-  ];
+  // --- STAT CARD COMPONENT (Reused for consistency) ---
+  const StatCard = ({ title, value, subtext, colorClass, }) => (
+    <div className="card bg-base-100 border border-base-200 shadow-sm p-4  transition-shadow">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/50 mb-1">
+            {title}
+          </span>
+          <span className={`text-2xl font-bold ${colorClass}`}>
+            {value}
+          </span>
+          <span className={`text-[10px] font-medium ${colorClass} opacity-80 mt-1`}>
+            {subtext}
+          </span>
+        </div>
+      
+      </div>
+    </div>
+  );
 
   return (
-
     <>
+      <DashboardPageHeader breadData={breadData} heading="Mark Attendance" />
+      <div className="w-full pb-20"> 
+        <div className="max-w-7xl mx-auto space-y-6">
 
-    <DashboardPageHeader breadData={breadData} heading="Mark Attendance" />
-    <div className="w-full   ">
-      
-<div className="max-w-7xl m-auto  space-y-6 ">
-      <div className="card bg-base-100  border border-base-200">
-        <div className="card-body p-4">
-          <div className="flex items-center gap-3">
-            <label className="font-medium text-xs text-base-content/70">Date</label>
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="input input-bordered input-sm text-xs h-10" />
-            <div className="text-xs text-base-content/60 ml-2">{selectedDate ? new Date(selectedDate).toLocaleDateString() : ""}</div>
+          {/* 1. PROFESSIONAL STATS GRID (Updated) */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+             <StatCard 
+               title="Total Staff" 
+               value={stats.total} 
+               subtext="Active Employees"
+               icon={Users} 
+               colorClass="text-base-content" 
+               bgClass="bg-base-200"
+             />
+             <StatCard 
+               title="Present" 
+               value={stats.present} 
+               subtext="Checked In"
+               icon={CheckCircle} 
+               colorClass="text-success" 
+               bgClass="bg-success/10"
+             />
+             <StatCard 
+               title="Absent" 
+               value={stats.absent} 
+               subtext="Not Arrived"
+               icon={XCircle} 
+               colorClass="text-error" 
+               bgClass="bg-error/10"
+             />
+             <StatCard 
+               title="On Leave" 
+               value={stats.leave} 
+               subtext="Approved Leave"
+               icon={Clock} 
+               colorClass="text-warning" 
+               bgClass="bg-warning/10"
+             />
+             
+             {/* Progress Card (Custom Layout) */}
+             <div className="card bg-base-100 border border-base-200 shadow-sm p-4 col-span-2 md:col-span-1">
+                <div className="flex justify-between items-start mb-2">
+                   <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/50">
+                        Completion
+                      </span>
+                      <div className="text-2xl font-bold text-[var(--primary-color)]">
+                        {completionPercentage}%
+                      </div>
+                   </div>
+                   <div className="p-2 rounded-lg bg-[var(--primary-color)]/10">
+                      <PieChart className="w-5 h-5 text-[var(--primary-color)]" />
+                   </div>
+                </div>
+                <progress 
+                  className="progress progress-primary w-full h-1.5" 
+                  value={completionPercentage} 
+                  max="100"
+                ></progress>
+             </div>
           </div>
+
+          {/* 2. STICKY ACTION HEADER (Sticks to top of content, under page header) */}
+          <div className="sticky top-0 z-30 bg-base-100 border border-base-200 rounded-lg  shadow-sm p-3 flex flex-col md:flex-row items-center justify-between gap-4 transition-all">
+             
+             {/* Left: Date Picker */}
+             <div className="flex items-center gap-3 w-full md:w-auto bg-base-200/50 p-2 rounded-lg border border-base-200/50">
+                <Calendar className="w-4 h-4 text-[var(--primary-color)]"/>
+                <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer"
+                />
+             </div>
+
+             {/* Center: Search */}
+             <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
+                <input
+                  type="text"
+                  placeholder="Search name or iqama..."
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input input-sm w-full pl-10 h-10 bg-base-200/50 focus:bg-base-100 transition-colors border-transparent focus:border-[var(--primary-color)] rounded-lg"
+                />
+             </div>
+
+             {/* Right: Actions */}
+             <div className="flex gap-2 w-full md:w-auto">
+                 {/* Bulk Actions Dropdown */}
+                 <div className="dropdown dropdown-end">
+                    <button tabIndex={0} className="btn btn-sm btn-outline gap-2 h-10 w-full md:w-auto border-base-300">
+                       <Filter className="w-4 h-4"/> Bulk
+                    </button>
+                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-200 mt-1">
+                       <li><a onClick={() => markAllAs("Present")} className="text-xs text-success font-medium">Mark All Present</a></li>
+                       <li><a onClick={() => markAllAs("Absent")} className="text-xs text-error font-medium">Mark All Absent</a></li>
+                       <li><a onClick={() => markAllAs("Leave")} className="text-xs text-warning font-medium">Mark All Leave</a></li>
+                       <li className="border-t mt-1 pt-1"><a onClick={clearAllMarks} className="text-xs">Clear All</a></li>
+                    </ul>
+                 </div>
+                 
+                 {/* Save Button */}
+                 <button 
+                     onClick={handleSave} 
+                     disabled={Object.keys(attendance).length === 0 || isSaving || !canEdit}
+                     className="btn btn-sm bg-[var(--primary-color)] text-white hover:opacity-90 h-10 w-auto shadow-md border-none"
+                  >
+                     {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Save className="w-4 h-4 mr-1"/>}
+                     Save
+                  </button>
+             </div>
+          </div>
+
+          {/* 3. Messages */}
+          {isLoading && (
+            <div className="alert alert-info shadow-sm text-xs rounded-lg animate-pulse">
+              <span className="loading loading-spinner loading-sm"></span>
+              <span>Loading data...</span>
+            </div>
+          )}
+
+          {showSuccess && (
+            <div className="alert alert-success shadow-sm text-xs rounded-lg">
+              <CheckCircle className="w-5 h-5" />
+              <span>Attendance saved for {new Date(selectedDate).toLocaleDateString()}!</span>
+            </div>
+          )}
+
+          {!isLoading && attendanceMarked && !isEditMode && (
+            <div className="alert bg-yellow-50 text-yellow-800 border-yellow-200 shadow-sm text-xs rounded-lg flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                 <CheckCircle className="w-5 h-5" />
+                 <span>Attendance marked.</span>
+              </div>
+              <button onClick={enableEditMode} className="btn btn-sm bg-yellow-100 border-yellow-300 text-yellow-900 hover:bg-yellow-200">
+                <Edit2 className="w-3 h-3 mr-1" /> Edit
+              </button>
+            </div>
+          )}
+
+          {/* 4. Table */}
+          {!isLoading && canEdit && (
+             <div className="bg-base-100 border border-base-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto min-h-[400px]">
+                   <table className="table w-full">
+                      <thead className="bg-base-200/50 text-xs uppercase font-bold text-base-content/60">
+                         <tr>
+                            <th className="w-12 text-center">#</th>
+                            <th>Employee Details</th>
+                            <th>Current Status</th>
+                            <th>Project Assignment</th>
+                            <th className="w-16 text-center">Clear</th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-base-100">
+                         {filteredEmployees.length === 0 ? (
+                            <tr><td colSpan="5" className="text-center py-10 text-base-content/40">No employees found matching search.</td></tr>
+                         ) : (
+                            filteredEmployees.map((emp, i) => (
+                               <tr key={emp._id} className="hover:bg-base-50 transition-colors group">
+                                  <td className="text-center text-xs text-base-content/50">{i + 1}</td>
+                                  <td>
+                                     <div className="flex items-center gap-3">
+                                        <div className="avatar">
+                                           <Avatar name={emp.name} size="md"/>
+                                        </div>
+                                        <div>
+                                           <div className="font-bold text-sm text-base-content">{emp.name}</div>
+                                           <div className="text-xs text-base-content/50 font-mono">{emp.iqamaNumber}</div>
+                                        </div>
+                                     </div>
+                                  </td>
+                                  <td>
+                                     <ModernStatusDropdown 
+                                        value={attendance[emp._id]} 
+                                        onChange={(status) => updateStatus(emp._id, status)}
+                                     />
+                                  </td>
+                                  <td>
+                                     <ModernProjectDropdown 
+                                        value={projectAssignments[emp._id]}
+                                        projects={projects}
+                                        onChange={(project) => updateProject(emp._id, project)}
+                                     />
+                                  </td>
+                                  <td className="text-center">
+                                     {(attendance[emp._id] || projectAssignments[emp._id]) && (
+                                        <button 
+                                          onClick={() => {
+                                             setAttendance(prev => { const c={...prev}; delete c[emp._id]; return c; });
+                                             setProjectAssignments(prev => { const c={...prev}; delete c[emp._id]; return c; });
+                                          }}
+                                          className="btn btn-ghost btn-xs text-base-content/30 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                           <Trash2 className="w-4 h-4" />
+                                        </button>
+                                     )}
+                                  </td>
+                               </tr>
+                            ))
+                         )}
+                      </tbody>
+                   </table>
+                </div>
+             </div>
+          )}
         </div>
       </div>
-
-      {isLoading && (
-        <div className="alert alert-info shadow-sm text-xs">
-          <span className="loading loading-spinner loading-sm"></span>
-          <span>Loading attendance data...</span>
-        </div>
-      )}
-
-      {!isLoading && attendanceMarked && !isEditMode && (
-        <div className="alert alert-warning shadow-sm text-xs">
-          <CheckCircle className="w-5 h-5" />
-          <span>Attendance for <strong>{selectedDate}</strong> is already marked.</span>
-          <button type="button" onClick={enableEditMode} className="btn btn-sm gap-2 bg-[var(--primary-color)] text-white hover:opacity-90">
-            <Edit2 className="w-4 h-4" />
-            Edit Attendance
-          </button>
-        </div>
-      )}
-
-      {showSuccess && (
-        <div className="alert alert-success shadow-sm text-xs">
-          <CheckCircle className="w-5 h-5" />
-          <span>Attendance saved successfully for {selectedDate}!</span>
-        </div>
-      )}
-
-      {!isLoading && canEdit && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {[
-              { title: "Total", value: stats.total, desc: "Employees", color: "" },
-              { title: "Present", value: stats.present, desc: "Marked present", color: "text-success" },
-              { title: "Absent", value: stats.absent, desc: "Marked absent", color: "text-error" },
-              { title: "Leave", value: stats.leave, desc: "On leave", color: "text-warning" },
-              { title: "Progress", value: `${completionPercentage}%`, desc: "Completion rate", color: "text-[var(--primary-color)]" },
-            ].map((stat, idx) => (
-              <div key={idx} className="stats shadow bg-base-100 border border-base-200">
-                <div className="stat py-3 px-4">
-                  <div className="stat-title text-xs text-base-content/60">{stat.title}</div>
-                  <div className={`stat-value text-2xl ${stat.color}`}>{stat.value}</div>
-                  <div className={`stat-desc text-xs ${stat.color}`}>{stat.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="card bg-base-100 shadow-sm border border-base-200">
-            <div className="card-body p-4 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40" />
-                <input type="text" placeholder="Search by name or Iqama..." onChange={(e) => onSearchChange(e.target.value)} className="input input-bordered input-sm w-full pl-10 text-xs h-10" />
-              </div>
-              <div className="dropdown dropdown-end">
-                <label tabIndex={0} className="btn btn-sm btn-outline gap-2 text-xs h-10" role="button">
-                  Quick Actions <ChevronDown className="w-4 h-4" />
-                </label>
-                <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-44 text-xs border border-base-200">
-                  <li><button type="button" onClick={() => markAllAs("Present")}>Mark All Present</button></li>
-                  <li><button type="button" onClick={() => markAllAs("Absent")}>Mark All Absent</button></li>
-                  <li><button type="button" onClick={() => markAllAs("Leave")}>Mark All Leave</button></li>
-                  <li className="border-t mt-1 pt-1"><button type="button" onClick={clearAllMarks}>Clear All</button></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-sm border border-base-200 px-4 py-6">
-            <div className="card-body p-0">
-              <div className="overflow-x-auto">
-                <table className="table table-sm">
-                  <thead className="bg-base-200">
-                    <tr className="text-xs uppercase">
-                      <th className="py-3">#</th>
-                      <th className="py-3">Employee</th>
-                      <th className="py-3">Iqama Number</th>
-                      <th className="py-3">Status</th>
-                      <th className="py-3">Project</th>
-                      <th className="py-3 text-center">Indicator</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEmployees.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-16 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <Search className="w-12 h-12 text-base-content/40" />
-                            <div className="font-medium text-xs">No employees found</div>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredEmployees.map((emp, i) => (
-                        <tr key={emp.id} className="hover:bg-base-200">
-                          <td className="py-3 text-xs">{i + 1}</td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="avatar">
-                                <div className="w-10 h-10 rounded-md  ring-1 ring-base-300">
-                                  {emp.image ? (
-                                    <img src={emp.image} alt={emp.name} />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-[var(--primary-color)] text-white text-xs font-semibold">
-                                      {emp.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="font-medium text-xs">{emp.name}</div>
-                            </div>
-                          </td>
-                          <td className="font-mono text-xs py-3">{emp.iqama}</td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <StatusDropdown idLabel={`status-${emp.id}`} value={attendance[emp.id]} onChange={(status) => updateStatus(emp.id, status)} />
-                              {attendance[emp.id] && (
-                                <button type="button" className="btn btn-ghost btn-xs" onClick={() => setAttendance((prev) => { const copy = { ...prev }; delete copy[emp.id]; return copy; })}>×</button>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <ProjectDropdown idLabel={`project-${emp.id}`} value={projectAssignments[emp.id]} projects={projects} onChange={(project) => updateProject(emp.id, project)} />
-                              {projectAssignments[emp.id] && (
-                                <button type="button" className="btn btn-ghost btn-xs" onClick={() => setProjectAssignments((prev) => { const copy = { ...prev }; delete copy[emp.id]; return copy; })}>×</button>
-                              )}
-                            </div>
-                          </td>
-                          <td className="text-center py-3">
-                            {attendance[emp.id] === "Present" && <CheckCircle className="w-5 h-5 text-success inline-block" />}
-                            {attendance[emp.id] === "Absent" && <XCircle className="w-5 h-5 text-error inline-block" />}
-                            {attendance[emp.id] === "Leave" && <Clock className="w-5 h-5 text-warning inline-block" />}
-                            {!attendance[emp.id] && <div className="w-2 h-2 bg-base-content/30 rounded-full inline-block"></div>}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-sm border border-base-200">
-            <div className="card-body p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-base-content/60">
-                {Object.keys(attendance).length > 0 ? (
-                  <span><strong className="text-[var(--primary-color)]">{Object.keys(attendance).length}</strong> of <strong>{filteredEmployees.length}</strong> marked</span>
-                ) : (
-                  <span>No attendance marked yet</span>
-                )}
-              </div>
-              <div className="flex gap-3">
-                <button type="button" className="btn btn-ghost btn-sm text-xs h-10" onClick={clearAllMarks} disabled={Object.keys(attendance).length === 0}>Clear All</button>
-                <button type="button" className="btn btn-sm text-white bg-[var(--primary-color)] hover:opacity-90 text-xs h-10" onClick={handleSave} disabled={Object.keys(attendance).length === 0 || isSaving}>
-                  {isSaving ? <span className="loading loading-spinner loading-sm"></span> : <><Save className="w-4 h-4 mr-2" />{isEditMode ? "Update Attendance" : "Save Attendance"}</>}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-    </div>
-    </>  );
+    </>
+  );
 }

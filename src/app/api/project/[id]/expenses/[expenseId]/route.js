@@ -7,14 +7,37 @@ export async function DELETE(req, { params }) {
     await connectDB();
     const { id, expenseId } = params;
 
+    // Validate Required Params
+    if (!id || !expenseId) {
+      return NextResponse.json(
+        { success: false, message: "Project ID and Expense ID are required" },
+        { status: 400 }
+      );
+    }
+
     const updatedProject = await Project.findByIdAndUpdate(
       id,
-      { $pull: { expenses: { _id: expenseId } } }, 
+      { $pull: { expenses: { _id: expenseId } } },
       { new: true }
     );
 
-    return NextResponse.json(updatedProject);
+    if (!updatedProject) {
+      return NextResponse.json(
+        { success: false, message: "Project not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Expense deleted successfully",
+      data: updatedProject
+    });
+
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 500 }
+    );
   }
 }

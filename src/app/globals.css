@@ -20,21 +20,21 @@
 
 /* Chrome, Safari, Edge */
 ::-webkit-scrollbar {
-  width: 6px;      /* thin */
-  height: 6px;
+  width: 3px;      /* Thinner: reduced from 6px */
+  height: 3px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent; /* no background */
+  background: transparent; 
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #e5e7eb; /* very light gray (Tailwind: gray-200) */
-  border-radius: 9999px;     /* fully rounded */
+  background-color: #f3f4f6; /* Lighter: Tailwind gray-100 */
+  border-radius: 9999px;    
 }
 
 ::-webkit-scrollbar-button {
-  display: none; /* remove increment/decrement buttons */
+  display: none; 
 }
 
 ::-webkit-scrollbar-corner {
@@ -43,6 +43,6 @@
 
 /* Firefox */
 * {
-  scrollbar-width: thin;                     /* thin scrollbar */
-  scrollbar-color: #e5e7eb transparent;      /* thumb | track */
+  scrollbar-width: thin;           /* Firefox minimal width */
+  scrollbar-color: #f3f4f6 transparent; /* thumb | track */
 }

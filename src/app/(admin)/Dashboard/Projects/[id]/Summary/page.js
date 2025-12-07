@@ -235,7 +235,7 @@ export default function ProjectSummaryPage() {
         ["Location", project.location],
         ["Start Date", new Date(project.startDate).toLocaleDateString()],
         ["Estimated Budget", formatCurrency(project.estimatedBudget || 0)],
-        ["Progress", `${project.progress || 0}%`],
+        ["Status", `${project.status || "active"}`],
         [""],
         ["FINANCIAL OVERVIEW"],
         ["Total Income", formatCurrency(metrics.totalIncome)],
@@ -342,7 +342,7 @@ export default function ProjectSummaryPage() {
     { name: "Projects", href: "/Dashboard/Projects" },
     {
       name: project?.name || "Project",
-      href: `/Dashboard/Projects/${projectId}`,
+      href: `/Dashboard/Projects/${projectId}/Dashboard`,
     },
     { name: "Summary Report", href: "#" },
   ];

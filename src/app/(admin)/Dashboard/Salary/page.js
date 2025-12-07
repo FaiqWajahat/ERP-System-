@@ -60,15 +60,15 @@ const EmployeeSalaryList = () => {
                          emp.iqamaNumber?.includes(searchTerm) ||
                          emp.phone?.includes(searchTerm);
     const matchesStatus = selectedStatus === 'All' || 
-                         (selectedStatus === 'Active' && emp.active) ||
-                         (selectedStatus === 'Inactive' && !emp.active);
+                         (selectedStatus === 'Active' && emp.status) ||
+                         (selectedStatus === 'Inactive' && !emp.status);
     return matchesSearch && matchesStatus;
   });
 
   // Stats
 
-  const activeEmployees = employees.filter(emp => emp.active).length;
-  const inactiveEmployees = employees.filter(emp => !emp.active).length;
+  const activeEmployees = employees.filter(emp => emp.status).length;
+  const inactiveEmployees = employees.filter(emp => !emp.status).length;
 
 
 
@@ -121,18 +121,23 @@ const EmployeeSalaryList = () => {
 
       {/* Table Section */}
       <div className="w-full bg-base-100 rounded-xl shadow-lg p-4 lg:p-6 mt-6">
-        <div className="w-full flex flex-col gap-4 md:flex-row items-center justify-between mb-6 md:px-2">
+     <div className="w-full flex flex-col gap-4 md:flex-row items-center justify-between mb-6 md:px-2">
           <div className="w-full md:w-auto justify-center md:justify-start flex">
+          <p className="text-sm text-base-content/60 mt-1">
+    Choose employee to track  salary records.
+  </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-full md:w-auto justify-center md:justify-start flex">
             <DashboardSearch 
               placeholder="Search Employee" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="flex items-center gap-4">
             <div>
-              <label className="font-medium text-sm mr-2">Status:</label>
+             
               <CustomDropdown 
                 value={selectedStatus} 
                 setValue={setSelectedStatus} 
@@ -141,6 +146,7 @@ const EmployeeSalaryList = () => {
             </div>
           </div>
         </div>
+
 
         {/* Employee Table */}
         <div className="w-full overflow-x-auto">
@@ -185,7 +191,7 @@ const EmployeeSalaryList = () => {
                     <td className=" text-sm">{emp.iqamaNumber}</td>
                     <td className='text-sm'>{emp.phone ?? "N/A"}</td>
                     <td>
-                      {emp.active ? (
+                      {emp.status ? (
                         <span className="text-success font-medium">
                           Active
                         </span>

@@ -3,32 +3,69 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
+import axios from 'axios';
+import { errorToast } from '@/lib/toast';
+
 
 export default function LoginPage() {
-  const route = useRouter();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
-    if (!email || !password) return;
-    setIsLoading(true);
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    
+    if (!email || !password) {
+      errorToast('Please fill both fields');
+      return;
+    }
 
-    setTimeout(() => {
+    setIsLoading(true);
+   
+
+    try {
+      // API Call using Axios
+      const response = await axios.post('/api/user/login', {
+        email,
+        password,
+      });
+
+      const success= response.data.success
+
+      if (!success) {
+      
+       errorToast(response.data.message)
+       setIsLoading(false)
+       return;
+      }
+
+      
+        console.log('Login successful:', response.data);
+        
+        
+        router.push('/Dashboard');
+        
+    } catch (error) {
+    
+      
+      // Extract error message from backend response
+      const errorMessage = error.response?.data?.message || 'Something went wrong';
+      errorToast(errorMessage);
+    } finally {
       setIsLoading(false);
-      route.push('/Dashboard');
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSubmit();
+    if (e.key === 'Enter') handleLogin();
   };
-  
 
   return (
     <div className="min-h-screen flex bg-gray-50">
+      
+
       {/* Left Side Image */}
       <div className="hidden lg:block lg:w-[55%] relative overflow-hidden">
         <img
@@ -45,7 +82,8 @@ export default function LoginPage() {
 
           {/* Logo */}
           <div className="w-full mb-8 flex justify-center">
-            <Image src="/logo.png" alt="Logo" width={160} height={160} />
+            {/* Ensure you have this logo in your public folder, or remove if not needed */}
+            <Image src="/logo.png" alt="Logo" width={160} height={160} className="object-contain" />
           </div>
 
           {/* Welcome */}
@@ -57,7 +95,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <div className="space-y-4">
+          <form className="space-y-4" onSubmit={handleLogin}>
 
             {/* Email */}
             <div>
@@ -71,10 +109,10 @@ export default function LoginPage() {
                 <input
                   type="email"
                   placeholder="email@company.com"
-                  className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded focus:border-[var(--primary-color)] outline-none transition-all"
+                  className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded focus:border-[var(--primary-color)] focus:ring-1 focus:ring-[var(--primary-color)] outline-none transition-all"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                 />
               </div>
             </div>
@@ -92,15 +130,15 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded focus:border-[var(--primary-color)] outline-none transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded focus:border-[var(--primary-color)] focus:ring-1 focus:ring-[var(--primary-color)] outline-none transition-all"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                 />
 
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 text-gray-400 hover:text-gray-600 focus:outline-none"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -120,40 +158,31 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 border-gray-300"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span className="text-xs text-gray-700">Remember me</span>
-              </label>
-
-              <button className="text-xs font-medium text-[var(--primary-color)] hover:underline">
+            {/* Forgot Password (Right Aligned now that Remember Me is gone) */}
+            <div className="flex justify-end">
+              <button  onClick={()=>{router.push('/Forgot-Password')}}
+               type="button" className="text-xs font-medium text-[var(--primary-color)] ">
                 Forgot password?
               </button>
             </div>
 
             {/* Button */}
             <button
-              onClick={handleSubmit}
-              disabled={isLoading || !email || !password}
-              className="w-full bg-[var(--primary-color)] text-white text-sm font-semibold py-2.5 rounded shadow disabled:opacity-50"
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[var(--primary-color)] cursor-pointer text-white text-sm font-semibold py-2.5 rounded shadow hover:bg-opacity-90 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Signing in…
+                  Signing in...
                 </span>
               ) : (
                 "Sign In"
               )}
             </button>
 
-          </div>
+          </form>
         </div>
       </div>
     </div>

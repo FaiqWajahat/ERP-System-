@@ -5,7 +5,6 @@ import BreadCrumps from '@/Components/BreadCrumps';
 import DashboardTopStats from '@/Components/DashboardTopStats';
 import SalesChart from '@/Components/SalesChart';
 import Calender from '@/Components/Calender';
-import RevenueChart from '@/Components/RevenueChart';
 import RecentOrders from '@/Components/RecentOrders';
 
 const Page = () => {
@@ -47,28 +46,23 @@ const Page = () => {
         <h2 className="text-xl font-medium">Dashboard</h2>
         <BreadCrumps breadData={breadData} />
       </div>
-      <div className='mt-12'>
+      <div className=''>
  <DashboardTopStats />
       </div>
      
-      <div className='mt-12 grid grid-cols-12  gap-4  overflow-hidden'>
-        <div className=' col-span-12 lg:col-span-8 h-full'>
-          <SalesChart/>
+      <div className='mt-12 grid grid-cols-12  gap-4  overflow-hidden my-auto'>
+        <div className=' col-span-12 lg:col-span-8 '>
+         <RecentOrders/>
         </div>
          <div className=' col-span-12 lg:col-span-4'>
           <Calender/>
         </div>
       </div>
 
-      <div className='mt-12 overflow-hidden'>
-        
-       <RevenueChart/>
-       
-         
-      </div>
+    
       <div className='mt-12   w-full'>
         
-       <RecentOrders/>
+       <SalesChart/>
        
          
       </div>

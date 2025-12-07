@@ -1,61 +1,117 @@
 "use client";
 
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, LogOut, Settings, User } from "lucide-react";
 import Image from "next/image";
-
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 import CustomDropdown from "./CustomDropdown";
+import { useUserStore } from "@/stores/userStore";
+import axios from "axios";
 
 const DashboardHeader = ({ sidebarOpen, setSidebarOpen }) => {
-const [language, setLanguage] = React.useState('English');
+  const [language, setLanguage] = React.useState('English');
+  const { user, setUser } = useUserStore(); 
+  const [loading, setLoading] = React.useState(false);
+  const languages = [
+    'English',
+    'Urdu',
+    'Arabic',
+  ];
 
-const languages = [
-  'English',
-  'Urdu',
-  'Arabic',
- 
-];
+const handleLogout = async() => {
+    
+   try {
+     setLoading(true);
+     const response = await axios.post('/api/user/logout');
+     if (response.data.success) {
+       setUser(null); 
+       
+       window.location.href = '/';
+     } 
+
+     
+     
+     else {
+   errorToast("Logout failed. Please try again.");
+     }
+
+   }catch (error) {
+     console.error("Logout failed:", error);
+   } 
+    finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="navbar bg-base-100 shadow-sm px-3">
+    <div className="navbar bg-base-100 shadow-sm px-3 sticky top-0 z-40">
       <div className="flex-none hover:bg-base-300 p-1 rounded-sm">
-       <Menu onClick={()=>setSidebarOpen(!sidebarOpen)}
-        className="cursor-pointer "/>
+        <Menu 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="cursor-pointer text-base-content" 
+        />
       </div>
+      
       <div className="flex-1 ml-4">
-       <Image src={"/logo.png"} alt="Logo" width={120} height={60} />
+        {/* Ensure you have a logo.png in your public folder */}
+        <Image src={"/logo.png"} alt="Logo" width={120} height={60} priority />
       </div>
-      <div className="navbar-end gap-4 ">
-       <CustomDropdown value={language} setValue={setLanguage} dropdownMenu={languages}  />
+      
+      <div className="navbar-end gap-4">
+        {/* Language Dropdown */}
+        <CustomDropdown value={language} setValue={setLanguage} dropdownMenu={languages} />
 
+        {/* User Dropdown */}
         <div className="dropdown dropdown-end">
           <div
             tabIndex={0}
             role="button"
-            className="btn btn-ghost btn-circle avatar"
+            className="btn btn-ghost btn-circle avatar ring-[var(--primary-color)] ring-offset-2 hover:ring-2 transition-all"
           >
             <div className="w-10 rounded-full">
               <img
-                alt="Tailwind CSS Navbar component"
-                src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                alt="User Profile"
+                // Use dynamic user image or fallback
+                src={user?.profilePic || "https://i.pravatar.cc/300"}
+                className="object-cover"
               />
             </div>
           </div>
+          
           <ul
             tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[50] mt-3 w-52 p-2 shadow-lg border border-base-200"
           >
-            <li>
-              <a className="justify-between">
-                Profile
-                <span className="badge">New</span>
-              </a>
+            {/* User Name Header */}
+            <li className="menu-title px-4 py-2 text-base-content">
+              {user?.name || "User"}
             </li>
+            
+           
+
             <li>
-              <a>Settings</a>
+              <Link href="/Dashboard/Profile" className="justify-between py-2">
+                <div className="flex items-center gap-2">
+                  <User size={16} />
+                  Profile
+                </div>
+                
+              </Link>
             </li>
+            
+        
+            
+            <div className="divider my-0"></div>
+            
             <li>
-              <a>Logout</a>
+              <button disabled={loading} 
+               onClick={handleLogout}  className="py-2 text-error hover:bg-error/10">
+                <div className="flex items-center gap-2">
+                  <LogOut size={16} />
+                 { loading ? 'Logging out...' : 'Logout' }
+                </div>
+              </button>
             </li>
           </ul>
         </div>

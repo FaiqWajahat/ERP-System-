@@ -60,8 +60,8 @@ const EmployeeExpenseList = () => {
                          emp.iqamaNumber?.includes(searchTerm) ||
                          emp.phone?.includes(searchTerm);
     const matchesStatus = selectedStatus === 'All' || 
-                         (selectedStatus === 'Active' && emp.active) ||
-                         (selectedStatus === 'Inactive' && !emp.active);
+                         (selectedStatus === 'Active' && emp.status) ||
+                         (selectedStatus === 'Inactive' && !emp.status);
     return matchesSearch && matchesStatus;
   });
 
@@ -198,7 +198,7 @@ const EmployeeExpenseList = () => {
                     <td className=" text-sm">{emp.iqamaNumber}</td>
                     <td className='text-sm'>{emp.phone ?? "N/A"}</td>
                     <td>
-                      {emp.active ? (
+                      {emp.status ? (
                         <span className="text-success font-medium">
                           Active
                         </span>

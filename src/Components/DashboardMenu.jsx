@@ -53,7 +53,7 @@ const mainMenu = [
   {
     title: "Company Assets",
     icon: Package,
-    href: "/Dashboard/Products/All",
+    href: "/Dashboard/Company-Assets",
   },
 ];
 
@@ -162,11 +162,10 @@ const DashboardMenu = () => {
   const pathname = usePathname();
 
   return (
-    <div className="w-full h-full flex flex-col justify-between py-6 px-2 bg-base-100 border-r border-base-200">
+    <div className="w-full h-full flex flex-col justify-between  px-2 bg-base-100 ">
       {/* --- Top Section --- */}
       <div className="space-y-6">
-        {/* Optional Logo Area */}
-        {/* <div className="px-4 text-xl font-bold text-[var(--primary-color)]">BuildCo</div> */}
+        
 
         <div>
           <p className="px-4 mb-3 text-[11px] font-bold text-base-content/40 uppercase tracking-widest">

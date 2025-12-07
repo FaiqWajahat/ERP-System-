@@ -322,6 +322,7 @@ export default function EmployeeSalaryPage() {
       ['SALARY SLIP', 'Seven Directions.'],
       ['Employee', employee?.name],
       ['Period', `${formatDate(record.fromDate)} - ${formatDate(record.toDate)}`],
+        ['Paid On', record.paidDate ? formatDate(record.paidDate) : 'N/A'],
       ['Status', record.status],
       [],
       ['DESCRIPTION', 'AMOUNT'],
@@ -331,7 +332,9 @@ export default function EmployeeSalaryPage() {
       ['Other Deductions', `-${record.deductions || 0}`],
       ...(record.expenses || []).map(e => [e.description, `-${e.amount}`]),
       [],
-      ['NET SALARY', record.netSalary]
+      ['NET SALARY', record.netSalary],
+      ['Notes', record.notes || 'N/A']
+    
     ];
     downloadCSV(rows, `Salary_${employee?.name}_${record.month}.csv`);
   };
@@ -503,7 +506,7 @@ export default function EmployeeSalaryPage() {
                     <div className="space-y-4">
                       <h4 className="font-semibold text-sm text-error border-b pb-2">Deductions</h4>
                       <div className="form-control">
-                        <label className="label text-xs font-medium block">Absent Days</label>
+                        <label className="label text-xs font-medium block pt-2">Absent Days</label>
                         <div className="join">
                           <input type="number" className="input input-sm input-bordered join-item w-full" 
                             value={formData.absentDays} onChange={e => setFormData({...formData, absentDays: e.target.value})} />
@@ -557,7 +560,7 @@ export default function EmployeeSalaryPage() {
                         
                         <div className="bg-base-100 p-4 rounded-lg mt-4 border border-base-300">
                           <span className="block text-xs text-gray-500 mb-1">Net Payable Salary</span>
-                          <span className="block text-sm font-bold text-[var(--primary-color)]">{formatCurrency(calculatedData.netSalary)}</span>
+                          <span className="block text-lg font-bold text-[var(--primary-color)]">{formatCurrency(calculatedData.netSalary)}</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 mt-6">

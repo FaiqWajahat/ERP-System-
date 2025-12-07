@@ -1,193 +1,169 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import axios from "axios";
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
-import { ArrowLeft, Calendar, Edit2, Trash2, X } from "lucide-react";
+import { ArrowLeft, Calendar, X, Loader2, AlertCircle } from "lucide-react";
 import DashboardSearch from "@/Components/DashboardSearch";
 import CustomDropdown from "@/Components/CustomDropdown";
+import CustomLoader from "@/Components/CustomLoader";
+import Avatar from "@/Components/Avatar";
 
-const statusOptions = ["Present", "Absent", "Leave"];
+const statusOptions = ["All", "Present", "Absent", "Leave"];
 
 export default function MonthAttendancePage() {
   const params = useParams();
   const { year, month } = params;
 
+  // Data State
   const [attendance, setAttendance] = useState([]);
-  const [filteredAttendance, setFilteredAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Filter State
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState("");
-  const [editingRecord, setEditingRecord] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // Dummy employee attendance data
-  const dummyAttendanceData = [
-    {
-      id: 1,
-      employeeName: "Ali Khan",
-      iqamaNumber: "1234567890",
-      image: "/dummy-user1.jpg",
-      date: `${year}-${month}-01`,
-      status: "Present",
-    },
-    {
-      id: 2,
-      employeeName: "Ahmed Raza",
-      iqamaNumber: "0987654321",
-      image: "/dummy-user2.jpg",
-      date: `${year}-${month}-01`,
-      status: "Absent",
-    },
-    {
-      id: 3,
-      employeeName: "Sara Ahmed",
-      iqamaNumber: "1122334455",
-      image: "/dummy-user3.jpg",
-      date: `${year}-${month}-01`,
-      status: "Leave",
-    },
-    {
-      id: 4,
-      employeeName: "Ali Khan",
-      iqamaNumber: "1234567890",
-      image: "/dummy-user1.jpg",
-      date: `${year}-${month}-02`,
-      status: "Present",
-    },
-    {
-      id: 5,
-      employeeName: "Ahmed Raza",
-      iqamaNumber: "0987654321",
-      image: "/dummy-user2.jpg",
-      date: `${year}-${month}-02`,
-      status: "Present",
-    },
-    {
-      id: 6,
-      employeeName: "Sara Ahmed",
-      iqamaNumber: "1122334455",
-      image: "/dummy-user3.jpg",
-      date: `${year}-${month}-03`,
-      status: "Absent",
-    },
-  ];
-
-  const dropdownMenu = ["All", "Present", "Absent", "Leave"];
-
+  // --- 1. Fetch Real Data ---
   useEffect(() => {
-    setTimeout(() => {
-      setAttendance(dummyAttendanceData);
-      setFilteredAttendance(dummyAttendanceData);
-      setLoading(false);
-    }, 500);
+    const fetchMonthData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get("/api/attendance/month", {
+          params: { year, month },
+        });
+
+        if (response.data.success) {
+          setAttendance(response.data.records || []);
+        }
+      } catch (err) {
+        console.error("Error loading month data:", err);
+        setError("Failed to load attendance records.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (year && month) {
+      fetchMonthData();
+    }
   }, [year, month]);
 
-  // Filter attendance by search, status, and date
-  useEffect(() => {
-    let filtered = attendance.filter((rec) =>
-      rec.employeeName.toLowerCase().includes(search.toLowerCase())
-    );
+  // --- 2. Robust Search Handler (Fixes the crash) ---
+  const handleSearchChange = (e) => {
+    // If your DashboardSearch returns an event, extract value.
+    // If it returns a string directly, use it.
+    const value = e?.target ? e.target.value : e;
+    setSearch(value);
+  };
 
-    if (statusFilter !== "All") {
-      filtered = filtered.filter((rec) => rec.status === statusFilter);
+  // --- 3. Filter Logic (Using useMemo for performance & stability) ---
+  const filteredAttendance = useMemo(() => {
+    return attendance.filter((rec) => {
+      // Safety Check: Ensure fields exist before calling toLowerCase()
+      const nameMatch = (rec.employeeName || "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      // Check both 'iqama' (backend field) and 'iqamaNumber' (possible frontend variation)
+      const iqamaStr = (rec.iqama || rec.iqamaNumber || "").toString();
+      const iqamaMatch = iqamaStr.includes(search);
+
+      const matchesSearch = nameMatch || iqamaMatch;
+
+      const matchesStatus =
+        statusFilter === "All" || rec.status === statusFilter;
+
+      const matchesDate = !dateFilter || rec.date.startsWith(dateFilter);
+
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [attendance, search, statusFilter, dateFilter]);
+
+  // --- 4. Statistics Calculation ---
+  const stats = useMemo(
+    () => ({
+      total: attendance.length,
+      present: attendance.filter((r) => r.status === "Present").length,
+      absent: attendance.filter((r) => r.status === "Absent").length,
+      leave: attendance.filter((r) => r.status === "Leave").length,
+    }),
+    [attendance]
+  );
+
+  const attendancePercentage =
+    stats.total > 0 ? ((stats.present / stats.total) * 100).toFixed(1) : 0;
+
+  // Generate days for the date filter
+  const getDaysInMonth = () => {
+    try {
+      const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+      const days = new Date(year, monthIndex + 1, 0).getDate();
+
+      return [
+        "All Days",
+        ...Array.from({ length: days }, (_, i) => {
+          const day = (i + 1).toString().padStart(2, "0");
+          const m = (monthIndex + 1).toString().padStart(2, "0");
+          return `${year}-${m}-${day}`;
+        }),
+      ];
+    } catch (e) {
+      return ["All Days"];
     }
-
-    if (dateFilter) {
-      filtered = filtered.filter((rec) => rec.date === dateFilter);
-    }
-
-    setFilteredAttendance(filtered);
-  }, [search, attendance, statusFilter, dateFilter]);
+  };
 
   const breadData = [
     { name: "Dashboard", href: "/Dashboard" },
     { name: "Attendance", href: "/Dashboard/Attendance" },
     {
-      name: "Month Attendance",
+      name: `${month} ${year}`,
       href: `/Dashboard/Attendance/Month/${year}/${month}`,
     },
   ];
 
-  // Calculate statistics
-  const stats = {
-    total: attendance.length,
-    present: attendance.filter((r) => r.status === "Present").length,
-    absent: attendance.filter((r) => r.status === "Absent").length,
-    leave: attendance.filter((r) => r.status === "Leave").length,
-  };
-
-  const attendancePercentage =
-    stats.total > 0 ? ((stats.present / stats.total) * 100).toFixed(1) : 0;
-
-  const monthName = new Date(year, month - 1).toLocaleString("default", {
-    month: "long",
-  });
-
-  // Handle Edit
-  const handleEdit = (record) => {
-    setEditingRecord({ ...record });
-  };
-
-  const handleSaveEdit = () => {
-    const updatedAttendance = attendance.map((rec) =>
-      rec.id === editingRecord.id ? editingRecord : rec
-    );
-    setAttendance(updatedAttendance);
-    setEditingRecord(null);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingRecord(null);
-  };
-
-  // Handle Delete
-  const handleDeleteClick = (record) => {
-    setDeleteConfirm(record);
-  };
-
-  const handleConfirmDelete = () => {
-    const updatedAttendance = attendance.filter(
-      (rec) => rec.id !== deleteConfirm.id
-    );
-    setAttendance(updatedAttendance);
-    setDeleteConfirm(null);
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteConfirm(null);
-  };
-
-  // Clear date filter
-  const clearDateFilter = () => {
+  const clearFilters = () => {
     setDateFilter("");
+    setStatusFilter("All");
+    setSearch("");
   };
 
   if (loading) {
+    return <CustomLoader />;
+  }
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <span className="loading loading-spinner loading-lg text-[var(--primary-color)]"></span>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <AlertCircle className="w-12 h-12 text-error" />
+        <h3 className="font-semibold text-lg">{error}</h3>
+        <Link href="/Dashboard/Attendance" className="btn btn-sm btn-outline">
+          Go Back
+        </Link>
       </div>
     );
   }
 
   return (
     <>
-      <DashboardPageHeader breadData={breadData} heading="Attendance" />
+      <DashboardPageHeader breadData={breadData} heading="Attendance Details" />
 
       <div className="w-full space-y-6">
         {/* Statistics Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="stats shadow bg-base-100">
+          <div className="stats shadow bg-base-100 border border-base-200">
             <div className="stat">
               <div className="stat-title text-xs">Total Records</div>
               <div className="stat-value text-2xl">{stats.total}</div>
-              <div className="stat-desc">{month}</div>
+              <div className="stat-desc">
+                {month} {year}
+              </div>
             </div>
           </div>
 
-          <div className="stats shadow bg-base-100">
+          <div className="stats shadow bg-base-100 border border-base-200">
             <div className="stat">
               <div className="stat-title text-xs">Present Days</div>
               <div className="stat-value text-2xl text-success">
@@ -197,7 +173,7 @@ export default function MonthAttendancePage() {
             </div>
           </div>
 
-          <div className="stats shadow bg-base-100">
+          <div className="stats shadow bg-base-100 border border-base-200">
             <div className="stat">
               <div className="stat-title text-xs">Absent Days</div>
               <div className="stat-value text-2xl text-error">
@@ -207,7 +183,7 @@ export default function MonthAttendancePage() {
             </div>
           </div>
 
-          <div className="stats shadow bg-base-100">
+          <div className="stats shadow bg-base-100 border border-base-200">
             <div className="stat">
               <div className="stat-title text-xs">Attendance Rate</div>
               <div className="stat-value text-2xl text-[var(--primary-color)]">
@@ -221,16 +197,16 @@ export default function MonthAttendancePage() {
         </div>
 
         {/* Main Content Card */}
-        <div className="card bg-base-100 shadow-sm">
+        <div className="card bg-base-100 shadow-sm border border-base-200">
           <div className="card-body">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h2 className="font-semibold text-base mb-1">
-                  {month} {year} Attendance Records
+                  {month} {year} Records
                 </h2>
                 <p className="text-base-content/70 text-xs">
-                  View and manage employee attendance
+                  Detailed daily attendance logs
                 </p>
               </div>
               <Link
@@ -238,7 +214,7 @@ export default function MonthAttendancePage() {
                 className="btn btn-ghost rounded-sm btn-sm gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                Back to Overview
               </Link>
             </div>
 
@@ -246,61 +222,83 @@ export default function MonthAttendancePage() {
             <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
               <div className="w-full lg:w-auto">
                 <DashboardSearch
-                  placeholder={"Search Employee"}
+                  placeholder={"Search Name or Iqama..."}
                   value={search}
-                  onChange={setSearch}
+                  // --- FIX APPLIED HERE ---
+                  onChange={handleSearchChange}
                 />
               </div>
 
-              <div className="flex items-center gap-4 mx-auto md:mx-0">
+              <div className="flex items-center gap-4 mx-auto md:mx-0 w-full lg:w-auto justify-end">
                 <div className="flex items-center gap-2">
-                  <label className="font-medium text-sm whitespace-nowrap">Day:</label>
+                  <label className="font-medium text-sm whitespace-nowrap hidden sm:block">
+                    Day:
+                  </label>
                   <CustomDropdown
                     value={dateFilter || "All Days"}
-                    setValue={(value) => setDateFilter(value === "All Days" ? "" : value)}
-                    dropdownMenu={["All Days", ...Array.from({ length: 31 }, (_, i) => {
-                      const day = (i + 1).toString().padStart(2, '0');
-                      return `${year}-${month}-${day}`;
-                    })]}
+                    setValue={(value) =>
+                      setDateFilter(value === "All Days" ? "" : value)
+                    }
+                    dropdownMenu={getDaysInMonth()}
                   />
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <label className="font-medium text-sm whitespace-nowrap">Status:</label>
+                  <label className="font-medium text-sm whitespace-nowrap hidden sm:block">
+                    Status:
+                  </label>
                   <CustomDropdown
                     value={statusFilter}
                     setValue={setStatusFilter}
-                    dropdownMenu={dropdownMenu}
+                    dropdownMenu={statusOptions}
                   />
                 </div>
               </div>
             </div>
 
             {/* Active Filters Display */}
-            {(dateFilter || statusFilter !== "All") && (
+            {(dateFilter || statusFilter !== "All" || search) && (
               <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-base-200 rounded-lg">
-                <span className="text-sm font-medium">Active Filters:</span>
+                <span className="text-sm font-medium">Filters:</span>
+
+                {search && (
+                  <div className="badge badge-neutral gap-2">
+                    Search: "{search}"
+                    <button
+                      onClick={() => setSearch("")}
+                      className="hover:text-error"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
                 {dateFilter && (
                   <div className="badge badge-primary gap-2">
                     Day: {new Date(dateFilter).getDate()}
-                    <button onClick={clearDateFilter} className="hover:text-error">
+                    <button
+                      onClick={() => setDateFilter("")}
+                      className="hover:text-error"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 )}
+
                 {statusFilter !== "All" && (
                   <div className="badge badge-secondary gap-2">
                     Status: {statusFilter}
-                    <button onClick={() => setStatusFilter("All")} className="hover:text-error">
+                    <button
+                      onClick={() => setStatusFilter("All")}
+                      className="hover:text-error"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 )}
+
                 <button
-                  onClick={() => {
-                    setDateFilter("");
-                    setStatusFilter("All");
-                  }}
+                  onClick={clearFilters}
                   className="text-xs text-error hover:underline ml-2"
                 >
                   Clear All
@@ -311,7 +309,7 @@ export default function MonthAttendancePage() {
             {/* Table */}
             <div className="overflow-x-auto">
               <table className="table table-md">
-                <thead className="bg-base-200">
+                <thead className="bg-base-200/50">
                   <tr>
                     <th className="text-xs font-semibold uppercase">
                       Employee
@@ -321,9 +319,7 @@ export default function MonthAttendancePage() {
                     </th>
                     <th className="text-xs font-semibold uppercase">Date</th>
                     <th className="text-xs font-semibold uppercase">Status</th>
-                    <th className="text-xs font-semibold uppercase text-center">
-                      Actions
-                    </th>
+                    <th className="text-xs font-semibold uppercase">Project</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -332,7 +328,7 @@ export default function MonthAttendancePage() {
                       <td colSpan={5} className="text-center py-16">
                         <div className="flex flex-col items-center gap-3">
                           <div className="bg-base-200 rounded-full p-6">
-                            <Calendar className="w-12 h-12 text-base-content/40" />
+                            <Calendar className="w-10 h-10 text-base-content/40" />
                           </div>
                           <h3 className="font-semibold text-base">
                             No Records Found
@@ -340,6 +336,12 @@ export default function MonthAttendancePage() {
                           <p className="text-sm text-base-content/70">
                             No attendance records found for the selected filters
                           </p>
+                          <button
+                            onClick={clearFilters}
+                            className="btn btn-sm btn-link"
+                          >
+                            Clear Filters
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -349,72 +351,49 @@ export default function MonthAttendancePage() {
                         <td>
                           <div className="flex items-center gap-3">
                             <div className="avatar">
-                              <div className="mask mask-squircle w-10 h-10">
-                                <img
-                                  src={rec.image}
-                                  alt={rec.employeeName}
-                                  onError={(e) => {
-                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      rec.employeeName
-                                    )}&background=random`;
-                                  }}
-                                />
-                              </div>
+                              <Avatar name={rec.employeeName } size="md" />
                             </div>
+
                             <span className="font-medium text-sm">
-                              {rec.employeeName}
+                              {rec.employeeName || "Unknown"}
                             </span>
                           </div>
                         </td>
                         <td>
-                          <span className="font-mono text-sm whitespace-nowrap">
-                            {rec.iqamaNumber}
+                          <span className="font-mono text-sm whitespace-nowrap opacity-80">
+                            {rec.iqama || rec.iqamaNumber || "-"}
                           </span>
                         </td>
                         <td>
                           <span className="text-sm whitespace-nowrap">
                             {new Date(rec.date).toLocaleDateString("en-US", {
                               weekday: "short",
-                              year: "numeric",
-                              month: "short",
                               day: "numeric",
+                              month: "short",
                             })}
                           </span>
                         </td>
                         <td>
                           {rec.status === "Present" && (
-                            <span className=" text-success text-sm">
-                              {rec.status}
-                            </span>
+                            <div className="badge badge-success badge-sm gap-1 text-xs">
+                              Present
+                            </div>
                           )}
                           {rec.status === "Absent" && (
-                            <span className=" text-error text-sm">
-                              {rec.status}
-                            </span>
+                            <div className="badge badge-error badge-sm gap-1 text-xs">
+                              Absent
+                            </div>
                           )}
                           {rec.status === "Leave" && (
-                            <span className=" text-warning text-sm">
-                              {rec.status}
-                            </span>
+                            <div className="badge badge-warning badge-sm gap-1 text-xs">
+                              Leave
+                            </div>
                           )}
                         </td>
                         <td>
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleEdit(rec)}
-                              className="btn btn-ghost rounded-sm py-3 btn-xs text-[var(--primary-color)] hover:bg-[var(--primary-color)] hover:text-white"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(rec)}
-                              className="btn btn-ghost btn-xs rounded-sm text-error hover:bg-error hover:text-white"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
+                          <span className="text-xs opacity-70">
+                            {rec.projectName || "No Project"}
+                          </span>
                         </td>
                       </tr>
                     ))
@@ -422,33 +401,34 @@ export default function MonthAttendancePage() {
                 </tbody>
               </table>
             </div>
-
           </div>
-            
         </div>
 
         {/* Additional Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="card bg-base-100 shadow-sm">
+          <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body">
               <h3 className="card-title text-sm">Leave Summary</h3>
-              <div className="stat-value text-3xl text-warning mt-2">
-                {stats.leave}
+              <div className="flex items-center gap-4 mt-2">
+                <div className="stat-value text-3xl text-warning">
+                  {stats.leave}
+                </div>
+                <div className="text-sm text-base-content/70">
+                  Total leave days
+                  <br /> in {month}
+                </div>
               </div>
-              <p className="text-sm text-base-content/70 mt-2">
-                Total leave days taken in {month} {year}
-              </p>
             </div>
           </div>
 
-          <div className="card bg-base-100 shadow-sm">
+          <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body">
-              <h3 className="card-title text-sm">Performance Status</h3>
+              <h3 className="card-title text-sm">Monthly Goal</h3>
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Attendance Goal</span>
+                  <span className="text-sm font-medium">Target: 90%</span>
                   <span className="text-sm font-semibold">
-                    {attendancePercentage}% / 90%
+                    {attendancePercentage}%
                   </span>
                 </div>
                 <progress
@@ -456,123 +436,11 @@ export default function MonthAttendancePage() {
                   value={attendancePercentage}
                   max="100"
                 ></progress>
-                <p className="text-xs text-base-content/70 mt-2">
-                  {parseFloat(attendancePercentage) >= 90
-                    ? "Excellent attendance record!"
-                    : `${(90 - parseFloat(attendancePercentage)).toFixed(
-                        1
-                      )}% more to reach goal`}
-                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Edit Modal */}
-      {editingRecord && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Edit Attendance Record</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium">Employee Name</span>
-                </label>
-                <input
-                  type="text"
-                  value={editingRecord.employeeName}
-                  disabled
-                  className="input input-bordered w-full input-sm"
-                />
-              </div>
-
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium">Date</span>
-                </label>
-                <input
-                  type="date"
-                  value={editingRecord.date}
-                  onChange={(e) =>
-                    setEditingRecord({ ...editingRecord, date: e.target.value })
-                  }
-                  className="input input-bordered w-full input-sm"
-                />
-              </div>
-
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium">Status</span>
-                </label>
-                <select
-                  value={editingRecord.status}
-                  onChange={(e) =>
-                    setEditingRecord({
-                      ...editingRecord,
-                      status: e.target.value,
-                    })
-                  }
-                  className="select select-bordered w-full select-sm"
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="modal-action">
-              <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="btn bg-[var(--primary-color)] text-white btn-sm"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={handleCancelEdit}></div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Confirm Delete</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Are you sure you want to delete the attendance record for{" "}
-              <span className="font-semibold text-base-content">
-                {deleteConfirm.employeeName}
-              </span>{" "}
-              on{" "}
-              <span className="font-semibold text-base-content">
-                {new Date(deleteConfirm.date).toLocaleDateString()}
-              </span>
-              ? This action cannot be undone.
-            </p>
-
-            <div className="modal-action">
-              <button onClick={handleCancelDelete} className="btn btn-ghost btn-sm">
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="btn btn-error text-white btn-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={handleCancelDelete}></div>
-        </div>
-      )}
     </>
   );
 }

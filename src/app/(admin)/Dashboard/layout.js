@@ -16,6 +16,8 @@ import {
 } from "next/font/google";
 import { useThemeStore } from "./Setting/Theme/page";
 import { useFontStore } from "@/stores/fontStore";
+import axios from "axios";
+import {useUserStore} from '@/stores/userStore';
 
 // Configure Inter font (you forgot this one!)
 const inter = Inter({
@@ -96,6 +98,7 @@ export default function AdminLayout({ children }) {
   const { theme, setTheme } = useThemeStore();
   const { font, setFont } = useFontStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { setUser } = useUserStore();
 
   // Initialize theme and font from localStorage on mount
   useEffect(() => {
@@ -105,10 +108,27 @@ export default function AdminLayout({ children }) {
       
       setTheme(savedTheme);
       setFont(savedFont);
+      fetchData();
     } catch (e) {
       console.warn("Error loading preferences:", e);
     }
   }, [setTheme, setFont]);
+
+  const fetchData = async () => { 
+    try {
+      const response = await axios.get('/api/user/profile');
+
+
+      const data = response.data;
+
+      setUser(data.user);
+
+      console.log('User set in store:', data.user);
+   
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } 
+  };  
 
   // Get the current font className
   const currentFontClass = fontMap[font] || inter.className;
@@ -152,7 +172,7 @@ export default function AdminLayout({ children }) {
 
         {/* Footer */}
         <footer className="h-10 flex items-center justify-center bg-base-100 text-xs text-gray-500 shrink-0">
-          Made with love by{" "}
+          {'Made with love by{" "}'}
           <span className="text-[#0885f3] ml-1 font-bold">Pixvion</span>
         </footer>
       </div>

@@ -8,21 +8,30 @@ const UserSchema = new mongoose.Schema(
     },
     name: {
       type: String,
-      required: true,
+      required: [true, "Name is required"],
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       unique: true,
     },
     password: {
       type: String,
-      required: true,
+      required: [true, "Password is required"],
     },
+    resetToken: {
+      type: String,
+      required: false, // Not everyone has a token all the time
+    },
+    resetTokenExpiry: {
+      type: Date,
+      required: false,
+    }
   },
   { timestamps: true }
 );
 
+// Prevent model recompilation error in Next.js hot reloading
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
 export default User;

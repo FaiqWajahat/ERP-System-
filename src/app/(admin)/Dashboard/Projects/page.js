@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import {
-  Plus, MapPin, Calendar, Eye, Trash2, X, AlertTriangle, DollarSign, CheckCircle
+  Plus, MapPin, Calendar, Trash2, X, AlertTriangle, DollarSign, CheckCircle, ArrowRight
 } from 'lucide-react';
 import DashboardPageHeader from '@/Components/DashboardPageHeader';
 import CustomDropdown from '@/Components/CustomDropdown';
@@ -119,15 +119,18 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleMarkAsCompleted = async (project) => {
+  const handleToggleStatus = async (project) => {
     const targetId = project._id || project.id;
     if (!targetId) return;
+
+    // Determine the new status (toggle between active and completed)
+    const newStatus = project.status === 'active' ? 'completed' : 'active';
 
     setUpdatingProjectId(targetId);
 
     try {
       const response = await axios.patch(`/api/project/status/${targetId}`, {
-        status: 'completed'
+        status: newStatus
       });
 
       const success = response.data.success;
@@ -135,17 +138,25 @@ export default function ProjectsPage() {
       if (!success) {
         errorToast(response.data.message || "Failed to update project status");
       } else {
-        successToast(response.data.message || "Project marked as completed");
+        successToast(
+          response.data.message || 
+          `Project marked as ${newStatus}`
+        );
 
         setProjects((prevProjects) =>
           prevProjects.map((p) =>
-            (p._id === targetId || p.id === targetId) ? { ...p, status: 'completed' } : p
+            (p._id === targetId || p.id === targetId) 
+              ? { ...p, status: newStatus } 
+              : p
           )
         );
       }
     } catch (error) {
       console.error('Error updating project status:', error);
-      errorToast(error.response?.data?.message || 'Failed to mark project as completed.');
+      errorToast(
+        error.response?.data?.message || 
+        'Failed to update project status.'
+      );
     } finally {
       setUpdatingProjectId(null);
     }
@@ -222,10 +233,9 @@ export default function ProjectsPage() {
     }
   };
 
-  // UPDATED: Search handler for DashboardSearch component
+  // Search handler for DashboardSearch component
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    
   };
 
   const getFilteredProjects = () => {
@@ -301,7 +311,6 @@ export default function ProjectsPage() {
       <div className="w-full bg-base-100 rounded-xl shadow-lg p-4 lg:p-6">
         <div className="w-full flex flex-col gap-4 md:flex-row items-center justify-between mb-6 md:px-2">
           <div className="w-full md:w-auto justify-center md:justify-start flex">
-            {/* FIXED: Added value and onChange props */}
             <DashboardSearch 
               placeholder="Search projects..."
               value={searchTerm}
@@ -326,9 +335,9 @@ export default function ProjectsPage() {
 
         {/* Projects Table */}
         <div className="w-full overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
+          <table className="table  w-full">
+            <thead className=''>
+              <tr className='bg-base-200 text-sm text-base-content/80 '>
                 <th>Project Name</th>
                 <th>Client</th>
                 <th>Location</th>
@@ -349,31 +358,35 @@ export default function ProjectsPage() {
                 filteredProjects.map(project => {
                    const projectId = project._id || project.id;
                    return (
-                  <tr key={projectId}>
+                  <tr
+                    key={projectId}
+                    className="hover:bg-base-200 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/Dashboard/Projects/${projectId}/Dashboard`)}
+                  >
                     <td>
                       <div className="font-medium">{project.name || project.projectName}</div>
                       {project.details && (
-                        <div className="text-xs text-gray-500 truncate max-w-[100px]">{project.details}</div>
+                        <div className="text-xs  truncate max-w-[100px]">{project.details}</div>
                       )}
                     </td>
                     <td>
-                      <span className="text-sm text-gray-700">{project.clientName || '-'}</span>
+                      <span className="text-sm ">{project.clientName || '-'}</span>
                     </td>
                     <td>
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-3 h-3 text-gray-400" />
+                        <MapPin className="w-3 h-3 " />
                         <span>{project.location}</span>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-3 h-3 text-gray-400" />
+                        <Calendar className="w-3 h-3 " />
                         <span>{formatDate(project.startDate)}</span>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-3 h-3 text-gray-400" />
+                        <DollarSign className="w-3 h-3 0" />
                         <span>{formatCurrency(project.estimatedBudget)}</span>
                       </div>
                     </td>
@@ -383,34 +396,41 @@ export default function ProjectsPage() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex gap-1 items-center">
-                        {project.status !== 'completed' && (
-                          <button
-                            onClick={() => handleMarkAsCompleted(project)}
-                            className="btn btn-ghost btn-xs text-success"
-                            title="Mark as Completed"
-                            disabled={updatingProjectId === projectId}
-                          >
-                            {updatingProjectId === projectId ? (
-                               <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                               <CheckCircle className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-
-                        <Link href={`/Dashboard/Projects/${projectId}/Dashboard`}>
-                          <button className="btn btn-ghost btn-xs" title="View Project">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </Link>
+                      <div className="flex gap-1 items-center" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => handleDeleteClick(project)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleStatus(project);
+                          }}
+                          className={`btn btn-ghost btn-xs ${
+                            project.status === 'active' ? 'text-success' : 'text-warning'
+                          }`}
+                          title={
+                            project.status === 'active' 
+                              ? 'Mark as Completed' 
+                              : 'Mark as Active'
+                          }
+                          disabled={updatingProjectId === projectId}
+                        >
+                          {updatingProjectId === projectId ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(project);
+                          }}
                           className="btn btn-ghost btn-xs text-error"
                           title="Delete Project"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        
+                        <ArrowRight className="w-4 h-4   ml-1" />
                       </div>
                     </td>
                   </tr>
@@ -419,7 +439,7 @@ export default function ProjectsPage() {
                 <tr>
                   <td colSpan="7" className="text-center py-12">
                     <div className="flex flex-col items-center">
-                      <div className="text-gray-400 mb-2">
+                      <div className="  mb-2">
                         {searchTerm ? `No projects found matching "${searchTerm}"` : 'No projects found'}
                       </div>
                       {!searchTerm && (
@@ -442,7 +462,7 @@ export default function ProjectsPage() {
          <div className="bg-base-100 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <div className="p-5">
             <div className="flex justify-between items-center mb-4 border-b border-base-200 pb-3">
-              <h2 className="text-lg font-bold text-gray-800">Add New Project</h2>
+              <h2 className="text-lg font-bold ">Add New Project</h2>
               <button onClick={() => { setShowAddModal(false); resetForm(); }} className="btn btn-ghost btn-xs btn-circle">
                 <X className="w-4 h-4" />
               </button>

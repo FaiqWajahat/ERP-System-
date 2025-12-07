@@ -1,17 +1,21 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+
 import { useRouter } from 'next/navigation';
 
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
 import DashboardSearch from "@/Components/DashboardSearch";
 import CustomDropdown from "@/Components/CustomDropdown";
+import CustomLoader from '@/Components/CustomLoader';
+import axios from 'axios';
+import { errorToast } from '@/lib/toast';
+import Avatar from '@/Components/Avatar';
 
-const EmployeeTrackingList = () => {
+const EmployeeRecord = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('Active');
+  const [selectedStatus, setSelectedStatus] = useState('All');
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,134 +23,121 @@ const EmployeeTrackingList = () => {
 
   const breadData = [
     { name: "Dashboard", href: "/Dashboard" },
-    { name: "Employees", href: "/Dashboard/Employees" },
-    { name: "Expenses", href: "/Dashboard/Employees/Tracking" },
+    { name: "Salary", href: "/Dashboard/Salary" },
+   
   ];
 
   // Fetch employees
   useEffect(() => {
-    const fetchEmployees = async () => {
-      setIsLoading(true);
-      
-      try {
-        // API CALL: Fetch all employees
-        // const response = await axios.get('/api/employees');
-        // setEmployees(response.data);
-        
-        // Temporary mock data - remove when API is connected
-        const mockEmployees = [
-          {
-            _id: "1",
-            name: "Ahmed Raza",
-            role: "Electrician",
-            phone: "0312-4567890",
-            iqama: "1245789654",
-            joinedAt: "2024-01-12",
-            active: true,
-            profilePic: "https://randomuser.me/api/portraits/men/27.jpg",
-          },
-          {
-            _id: "2",
-            name: "Bilal Khan",
-            role: "Plumber",
-            phone: "0321-9876543",
-            iqama: "9856321478",
-            joinedAt: "2023-03-03",
-            active: false,
-            profilePic: "https://randomuser.me/api/portraits/men/52.jpg",
-          },
-          {
-            _id: "3",
-            name: "Saad Ali",
-            role: "Labour",
-            phone: "0307-4445566",
-            iqama: "7412589630",
-            joinedAt: "2022-07-10",
-            active: true,
-            profilePic: "https://randomuser.me/api/portraits/men/12.jpg",
-          },
-          {
-            _id: "4",
-            name: "Hassan Ahmed",
-            role: "Carpenter",
-            phone: "0346-5566778",
-            iqama: "3692581470",
-            joinedAt: "2023-11-08",
-            active: true,
-            profilePic: "https://randomuser.me/api/portraits/men/40.jpg",
-          },
-        ];
-        
-        setEmployees(mockEmployees);
-      } catch (error) {
-        console.error('Error fetching employees:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchEmployees();
   }, []);
 
-  // Filter employees
+  const fetchEmployees = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await axios.get("/api/employee/getEmployee");
+      const success = response.data.success;
+
+      if (!success) {
+        errorToast(response.data.message || "Something went wrong");
+        setIsLoading(false);
+        return;
+      }
+
+      setEmployees(response.data.employees);
+    } catch (error) {
+      console.log("error of fetching employee:", error);
+      errorToast(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filter employees - FIXED: Using iqamaNumber consistently
   const filteredEmployees = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         emp.iqama.includes(searchTerm) ||
-                         emp.phone.includes(searchTerm);
+                         emp.iqamaNumber?.includes(searchTerm) ||
+                         emp.phone?.includes(searchTerm);
     const matchesStatus = selectedStatus === 'All' || 
-                         (selectedStatus === 'Active' && emp.active) ||
-                         (selectedStatus === 'Inactive' && !emp.active);
+                         (selectedStatus === 'Active' && emp.status) ||
+                         (selectedStatus === 'Inactive' && !emp.status);
     return matchesSearch && matchesStatus;
   });
 
- 
+  // Stats
 
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric' 
-    });
-  };
+  const activeEmployees = employees.filter(emp => emp.status).length;
+  const inactiveEmployees = employees.filter(emp => !emp.status).length;
 
-  // Navigate to expense details
-  const handleViewExpenses = (iqama) => {
-    router.push(`/Dashboard/Employees/Tracking/${iqama}`);
+
+
+  // Navigate to expense details - FIXED: Using iqamaNumber
+  const handleViewExpenses = (employeeId) => {
+    router.push(`/Dashboard/Employees/Tracking/${employeeId}`);
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg" style={{ color: 'var(--primary-color)' }}></span>
-          <p className="text-base-content/70 mt-4">Loading employees...</p>
-        </div>
-      </div>
+      <CustomLoader text={"Loading Employees...."}/>
     );
   }
 
   return (
     <>
-      <DashboardPageHeader breadData={breadData} heading="Employee Tracking" />
+      <DashboardPageHeader breadData={breadData} heading="Employee Expenses" />
 
-  
+     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="stats shadow bg-base-100">
+          <div className="stat">
+            <div className="stat-title text-xs">Employees</div>
+            <div className="stat-value text-2xl">
+              {employees.length}
+            </div>
+            <div className="stat-desc">Total Employees</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100">
+          <div className="stat">
+            <div className="stat-title text-xs">Active</div>
+            <div className="stat-value text-2xl text-success">
+              {activeEmployees}
+            </div>
+            <div className="stat-desc text-success">Active Employees</div>
+          </div>
+        </div>
+
+        <div className="stats shadow bg-base-100">
+          <div className="stat">
+            <div className="stat-title text-xs">Inactive</div>
+            <div className="stat-value text-2xl text-error">
+              {inactiveEmployees}
+            </div>
+            <div className="stat-desc text-error">Inactive Employees</div>
+          </div>
+        </div>
+      </div>
 
       {/* Table Section */}
       <div className="w-full bg-base-100 rounded-xl shadow-lg p-4 lg:p-6 mt-6">
-        <div className="w-full flex flex-col gap-4 md:flex-row items-center justify-between mb-6 md:px-2">
+     <div className="w-full flex flex-col gap-4 md:flex-row items-center justify-between mb-6 md:px-2">
           <div className="w-full md:w-auto justify-center md:justify-start flex">
+          <p className="text-sm text-base-content/60 mt-1">
+    Choose employee to track  salary records.
+  </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-full md:w-auto justify-center md:justify-start flex">
             <DashboardSearch 
               placeholder="Search Employee" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="flex items-center gap-4">
             <div>
-              <label className="font-medium text-sm mr-2">Status:</label>
+             
               <CustomDropdown 
                 value={selectedStatus} 
                 setValue={setSelectedStatus} 
@@ -156,6 +147,7 @@ const EmployeeTrackingList = () => {
           </div>
         </div>
 
+
         {/* Employee Table */}
         <div className="w-full overflow-x-auto">
           <table className="table w-full">
@@ -163,10 +155,11 @@ const EmployeeTrackingList = () => {
               <tr>
                 <th>S.No</th>
                 <th>Employee</th>
-                <th>Phone</th>
+                
                 <th>Iqama</th>
+                <th>Phone</th>
                 <th>Status</th>
-                <th>Joined At</th>
+                
                
               </tr>
             </thead>
@@ -175,7 +168,7 @@ const EmployeeTrackingList = () => {
               {filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp, idx) => (
                   <tr
-                  onClick={() => handleViewExpenses(emp.iqama)}
+                   onClick={() => handleViewExpenses(emp._id)}
                     key={emp._id}
                     className="hover:bg-base-200/40 transition cursor-pointer"
                   >
@@ -184,15 +177,7 @@ const EmployeeTrackingList = () => {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="avatar">
-                          <div className="w-10 h-10 rounded-md overflow-hidden ring ring-base-300 ring-offset-base-100 ring-offset-2">
-                            <Image
-                              src={emp.profilePic}
-                              alt={emp.name}
-                              width={50}
-                              height={50}
-                              className="object-cover"
-                            />
-                          </div>
+                          <Avatar name={emp.name} size='md'/>
                         </div>
 
                         <div>
@@ -202,23 +187,24 @@ const EmployeeTrackingList = () => {
                       </div>
                     </td>
 
-                    <td>{emp.phone}</td>
-                    <td className="font-mono text-sm">{emp.iqama}</td>
-
+                    
+                    <td className=" text-sm">{emp.iqamaNumber}</td>
+                    <td className='text-sm'>{emp.phone ?? "N/A"}</td>
                     <td>
-                      {emp.active ? (
-                        <span className="text-success">
+                      {emp.status ? (
+                        <span className="text-success font-medium">
                           Active
                         </span>
                       ) : (
-                        <span className="text-error ">
+                        <span className="text-error font-medium">
                           Inactive
                         </span>
                       )}
                     </td>
 
-                    <td>{formatDate(emp.joinedAt)}</td>
+                   
 
+                 
                    
                   </tr>
                 ))
@@ -234,11 +220,9 @@ const EmployeeTrackingList = () => {
             </tbody>
           </table>
         </div>
-
-        
       </div>
     </>
   );
 };
 
-export default EmployeeTrackingList;
+export default EmployeeRecord;

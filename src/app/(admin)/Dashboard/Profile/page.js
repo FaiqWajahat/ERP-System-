@@ -2,30 +2,36 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Upload, User, Loader2, CheckCircle2, X } from "lucide-react";
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
+import axios from "axios"; 
+import { errorToast, successToast } from "@/lib/toast";
+import { useUserStore } from "@/stores/userStore";
+import CustomLoader from "@/Components/CustomLoader";
 
 export default function ProfileSettings() {
+
+  const {setUser}= useUserStore();
+
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
+    name: "", // Matches Schema 'name'
+    email: "", // Matches Schema 'email'
     currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
   
-  const [profileImage, setProfileImage] = useState(null);
+  const [profilePic, setProfilePic] = useState(null); // Matches Schema 'profilePic'
   const [imageFile, setImageFile] = useState(null);
+  
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Fetch user profile data on mount
   useEffect(() => {
     fetchProfileData();
   }, []);
@@ -33,30 +39,27 @@ export default function ProfileSettings() {
   const fetchProfileData = async () => {
     try {
       setIsFetching(true);
+      const response = await axios.get('/api/user/profile');
+      const data = response.data;
+      const success = data.success;
+
+      if (!success) {
+        errorToast( data.message || "Failed to load profile data" );
+        return;
+      }
+
+      const userData = data.user || {}; 
       
-      // REPLACE WITH YOUR API ENDPOINT
-      // const response = await axios.get('/api/user/profile');
-      // const data = response.data;
-      
-      // Mock data for demonstration
-      const data = {
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@example.com",
-        phone: "+1 234 567 8900",
-        profileImage: null
-      };
-      
+    
       setFormData(prev => ({
         ...prev,
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        email: data.email || "",
-        phone: data.phone || ""
+        name: userData.name || "", 
+        email: userData.email || "",
       }));
       
-      if (data.profileImage) {
-        setProfileImage(data.profileImage);
+      // Matches Schema 'profilePic'
+      if (userData.profilePic) {
+        setProfilePic(userData.profilePic);
       }
       
     } catch (error) {
@@ -71,10 +74,7 @@ export default function ProfileSettings() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setMessage({ type: "", text: "" });
-    // Clear field-specific error
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
   const handleImageChange = (e) => {
@@ -84,14 +84,12 @@ export default function ProfileSettings() {
         setMessage({ type: "error", text: "Image size should be less than 5MB" });
         return;
       }
-      
       if (!file.type.startsWith('image/')) {
         setMessage({ type: "error", text: "Please upload a valid image file" });
         return;
       }
-      
       const reader = new FileReader();
-      reader.onloadend = () => setProfileImage(reader.result);
+      reader.onloadend = () => setProfilePic(reader.result);
       reader.readAsDataURL(file);
       setImageFile(file);
       setMessage({ type: "", text: "" });
@@ -99,22 +97,15 @@ export default function ProfileSettings() {
   };
 
   const handleRemoveImage = () => {
-    setProfileImage(null);
+    setProfilePic(null);
     setImageFile(null);
-    const fileInput = document.getElementById("photo-upload");
-    if (fileInput) fileInput.value = "";
+    // Note: To clear it in DB, we rely on the Save button
   };
 
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-    
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
+    if (!formData.name.trim()) newErrors.name = "Name is required";
     
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
@@ -122,18 +113,12 @@ export default function ProfileSettings() {
       newErrors.email = "Please enter a valid email address";
     }
     
-    if (formData.phone && !/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = "Please enter a valid phone number";
-    }
-    
     if (showPasswordSection) {
-      if (!formData.currentPassword) {
-        newErrors.currentPassword = "Current password is required";
-      }
+      if (!formData.currentPassword) newErrors.currentPassword = "Current password is required";
       
       if (!formData.newPassword) {
         newErrors.newPassword = "New password is required";
-      } else if (formData.newPassword.length < 8) {
+      } else if (formData.newPassword.length < 8) { // Adjusted length to be reasonable
         newErrors.newPassword = "Password must be at least 8 characters";
       }
       
@@ -150,7 +135,6 @@ export default function ProfileSettings() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       setMessage({ type: "error", text: "Please fix the errors below" });
       return;
@@ -160,16 +144,14 @@ export default function ProfileSettings() {
     setMessage({ type: "", text: "" });
 
     try {
-      // Prepare form data for API (multipart for image upload)
       const submitData = new FormData();
-      submitData.append("firstName", formData.firstName);
-      submitData.append("lastName", formData.lastName);
-      submitData.append("email", formData.email);
-      submitData.append("phone", formData.phone);
       
-      // Add image file if selected - backend will upload to Cloudinary
+      // Appending data matching your Schema
+      submitData.append("name", formData.name);
+      submitData.append("email", formData.email);
+      
       if (imageFile) {
-        submitData.append("profileImage", imageFile);
+        submitData.append("profilePic", imageFile); // 'profilePic' key for backend
       }
       
       if (showPasswordSection && formData.newPassword) {
@@ -177,18 +159,27 @@ export default function ProfileSettings() {
         submitData.append("newPassword", formData.newPassword);
       }
 
-      // REPLACE WITH YOUR API ENDPOINT
-      // Backend should handle Cloudinary upload and return the URL
-      // const response = await axios.put('/api/user/profile', submitData, {
-      //   headers: { 'Content-Type': 'multipart/form-data' }
-      // });
+      const response = await axios.put('/api/user/updateUser', submitData);
+      const data = response.data;
+      const success = data.success;
+      if (!success) {
+        errorToast( data.message || "Failed to update profile" );
+        return;
+      }
+      successToast( data.message || "Profile updated successfully!" );
+      setMessage({ type: "success", text: data.message || "Profile updated successfully!" });
+
       
-      // Mock successful response
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setMessage({ type: "success", text: "Profile updated successfully!" });
-      
-      // Reset password fields
+      if (data.user) {
+        setUser(data.user);
+        if (data.user.profilePic) setProfilePic(data.user.profilePic);
+        setFormData(prev => ({
+            ...prev,
+            name: data.user.name || prev.name,
+            email: data.user.email || prev.email,
+        }));
+      }
+
       if (showPasswordSection) {
         setFormData(prev => ({
           ...prev,
@@ -198,16 +189,12 @@ export default function ProfileSettings() {
         }));
         setShowPasswordSection(false);
       }
-      
-      // Clear image file reference
       setImageFile(null);
       
     } catch (error) {
       console.error("Error updating profile:", error);
-      setMessage({ 
-        type: "error", 
-        text: error.response?.data?.message || "Failed to update profile. Please try again." 
-      });
+      const errorMessage = error.response?.data?.message || "Failed to update profile.";
+      setMessage({ type: "error", text: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -215,33 +202,30 @@ export default function ProfileSettings() {
 
   if (isFetching) {
     return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <CustomLoader text={'Loading profile...'}/>
     );
   }
 
   const breadData = [
     { name: "Dashboard", href: "/Dashboard" },
-    { name: "Profile Settings", href: "Dashboard/profile" },
+    { name: "Profile Settings", href: "/Dashboard/Profile" },
   ];
 
   return (
     <>
-    <DashboardPageHeader breadData={breadData} heading="Profile Settings" />
+    <DashboardPageHeader breadData={breadData} heading="My Profile" />
     <div className="w-full bg-base-100 rounded-xl shadow-lg p-4 lg:p-6 mt-6">
-      <div className=" mx-auto">
-        <div className="bg-base-100  rounded-lg overflow-hidden">
+      <div className="mx-auto">
+        <div className="bg-base-100 rounded-lg overflow-hidden">
           
-        
           {/* Profile Image Section */}
           <div className="px-4 py-5 sm:px-6 bg-base-200/50 border-b border-base-300 rounded-sm">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
               <div className="relative flex-shrink-0">
                 <div className="avatar">
                   <div className="w-32 h-32 rounded-full ring ring-[var(--primary-color)] ring-offset-base-100 ring-offset-2">
-                    {profileImage ? (
-                      <img src={profileImage} alt="Profile" className="object-cover" />
+                    {profilePic ? (
+                      <img src={profilePic} alt="Profile" className="object-cover w-full h-full" />
                     ) : (
                       <div className="w-full h-full bg-base-300 flex items-center justify-center">
                         <User size={40} className="text-base-content/40" />
@@ -252,7 +236,7 @@ export default function ProfileSettings() {
                 
                 <label 
                   htmlFor="photo-upload" 
-                  className="btn bg-[var(--primary-color)] text-white btn-sm btn-circle absolute bottom-0 right-0 shadow-lg"
+                  className="btn bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90 border-none text-white btn-sm btn-circle absolute bottom-0 right-0 shadow-lg cursor-pointer"
                   title="Upload photo"
                 >
                   <Upload size={16} />
@@ -269,12 +253,12 @@ export default function ProfileSettings() {
 
               <div className="flex-1 m-auto text-center sm:text-left space-y-1">
                 <h2 className="text-xl font-semibold text-base-content">
-                  {formData.firstName} {formData.lastName}
+                  {formData.name || "User"}
                 </h2>
                 <p className="text-xs text-base-content/60">
                   JPG, PNG or GIF • Max 5MB
                 </p>
-                {profileImage && (
+                {profilePic && (
                   <button 
                     onClick={handleRemoveImage}
                     type="button" 
@@ -295,15 +279,15 @@ export default function ProfileSettings() {
             {/* Alert Message */}
             {message.text && (
               <div role="alert" className={`alert ${
-                message.type === "success" ? "alert-success" : 
+                message.type === "success" ? "alert-success text-white" : 
                 message.type === "info" ? "alert-info" : 
-                "alert-error"
-              } mb-4 text-sm py-3`}>
+                "alert-error text-white"
+              } mb-4 text-sm py-3 rounded-lg flex items-center`}>
                 <CheckCircle2 size={18} />
-                <span className="text-sm">{message.text}</span>
+                <span className="text-sm flex-1">{message.text}</span>
                 <button 
                   onClick={() => setMessage({ type: "", text: "" })}
-                  className="btn btn-ghost btn-xs btn-circle"
+                  className="btn btn-ghost btn-xs btn-circle text-current"
                 >
                   <X size={14} />
                 </button>
@@ -317,109 +301,57 @@ export default function ProfileSettings() {
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* First Name */}
-                <div className="form-control">
-                  <label htmlFor="firstName" className="label py-1">
+                {/* Full Name */}
+                <div className="form-control sm:col-span-2">
+                  <label htmlFor="name" className="label py-1">
                     <span className="label-text text-sm font-medium text-base-content">
-                      First Name <span className="text-error">*</span>
+                      Full Name <span className="text-error">*</span>
                     </span>
                   </label>
                   <input
-                    id="firstName"
-                    name="firstName"
+                    id="name"
+                    name="name"
                     type="text"
-                    placeholder="Enter first name"
-                    value={formData.firstName}
+                    placeholder="Enter full name"
+                    value={formData.name}
                     onChange={handleInputChange}
                     disabled={isLoading}
-                    className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                      errors.firstName ? 'input-error' : 'focus:input-neutral'
+                    className={`input input-sm input-bordered w-full text-sm focus:outline-none focus:border-[var(--primary-color)] transition-colors ${
+                      errors.name ? 'input-error' : ''
                     }`}
                   />
-                  {errors.firstName && (
+                  {errors.name && (
                     <label className="label py-1">
-                      <span className="label-text-alt text-error text-sm">{errors.firstName}</span>
+                      <span className="label-text-alt text-error text-sm">{errors.name}</span>
                     </label>
                   )}
                 </div>
 
-                {/* Last Name */}
-                <div className="form-control">
-                  <label htmlFor="lastName" className="label py-1">
+                {/* Email */}
+                <div className="form-control sm:col-span-2">
+                  <label htmlFor="email" className="label py-1">
                     <span className="label-text text-sm font-medium text-base-content">
-                      Last Name <span className="text-error">*</span>
+                      Email Address <span className="text-error">*</span>
                     </span>
                   </label>
                   <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    placeholder="Enter last name"
-                    value={formData.lastName}
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={formData.email}
                     onChange={handleInputChange}
                     disabled={isLoading}
-                    className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                      errors.lastName ? 'input-error' : 'focus:input-neutral'
+                    className={`input input-sm input-bordered w-full text-sm focus:outline-none focus:border-[var(--primary-color)] transition-colors ${
+                      errors.email ? 'input-error' : ''
                     }`}
                   />
-                  {errors.lastName && (
+                  {errors.email && (
                     <label className="label py-1">
-                      <span className="label-text-alt text-error text-sm">{errors.lastName}</span>
+                      <span className="label-text-alt text-error text-sm">{errors.email}</span>
                     </label>
                   )}
                 </div>
-              </div>
-
-              {/* Email */}
-              <div className="form-control">
-                <label htmlFor="email" className="label py-1">
-                  <span className="label-text text-sm font-medium text-base-content">
-                    Email Address <span className="text-error">*</span>
-                  </span>
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                    errors.email ? 'input-error' : 'focus:input-neutral'
-                  }`}
-                />
-                {errors.email && (
-                  <label className="label py-1">
-                    <span className="label-text-alt text-error text-sm">{errors.email}</span>
-                  </label>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div className="form-control">
-                <label htmlFor="phone" className="label py-1">
-                  <span className="label-text text-sm font-medium text-base-content">
-                    Phone Number
-                  </span>
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="+1 234 567 8900"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                    errors.phone ? 'input-error' : 'focus:input-neutral'
-                  }`}
-                />
-                {errors.phone && (
-                  <label className="label py-1">
-                    <span className="label-text-alt text-error text-sm">{errors.phone}</span>
-                  </label>
-                )}
               </div>
             </div>
 
@@ -432,7 +364,6 @@ export default function ProfileSettings() {
                   onClick={() => {
                     setShowPasswordSection(!showPasswordSection);
                     if (showPasswordSection) {
-                      // Clear password fields and errors when closing
                       setFormData(prev => ({
                         ...prev,
                         currentPassword: "",
@@ -470,8 +401,8 @@ export default function ProfileSettings() {
                         value={formData.currentPassword}
                         onChange={handleInputChange}
                         disabled={isLoading}
-                        className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                          errors.currentPassword ? 'input-error' : 'focus:input-neutral'
+                        className={`input input-sm input-bordered w-full text-sm focus:outline-none focus:border-[var(--primary-color)] transition-colors ${
+                          errors.currentPassword ? 'input-error' : ''
                         }`}
                       />
                       <button
@@ -506,8 +437,8 @@ export default function ProfileSettings() {
                         value={formData.newPassword}
                         onChange={handleInputChange}
                         disabled={isLoading}
-                        className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                          errors.newPassword ? 'input-error' : 'focus:input-neutral'
+                        className={`input input-sm input-bordered w-full text-sm focus:outline-none focus:border-[var(--primary-color)] transition-colors ${
+                          errors.newPassword ? 'input-error' : ''
                         }`}
                       />
                       <button
@@ -542,8 +473,8 @@ export default function ProfileSettings() {
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         disabled={isLoading}
-                        className={`input input-sm input-bordered w-full text-sm focus:outline-none transition-colors ${
-                          errors.confirmPassword ? 'input-error' : 'focus:input-neutral'
+                        className={`input input-sm input-bordered w-full text-sm focus:outline-none focus:border-[var(--primary-color)] transition-colors ${
+                          errors.confirmPassword ? 'input-error' : ''
                         }`}
                       />
                       <button
@@ -576,7 +507,7 @@ export default function ProfileSettings() {
                   setMessage({ type: "", text: "" });
                 }}
                 disabled={isLoading}
-                className="btn btn-ghost btn-sm text-xs rounded-sm"
+                className="btn btn-ghost btn-sm text-xs rounded-sm hover:bg-base-200"
               >
                 Reset Changes
               </button>
@@ -584,7 +515,7 @@ export default function ProfileSettings() {
                 type="button"
                 disabled={isLoading}
                 onClick={handleSubmit}
-                className="btn btn-ghost btn-sm text-white bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90 transition-colors rounded-sm"
+                className="btn btn-ghost btn-sm text-white bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90 transition-colors rounded-sm shadow-sm"
               >
                 {isLoading ? (
                   <>

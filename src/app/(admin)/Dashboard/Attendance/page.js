@@ -1,9 +1,11 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios"; // Import Axios
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
 import CustomDropdown from "@/Components/CustomDropdown";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, Loader2 } from "lucide-react";
+import CustomLoader from "@/Components/CustomLoader";
 
 export default function AttendanceDashboard() {
   const router = useRouter();
@@ -11,37 +13,38 @@ export default function AttendanceDashboard() {
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  
+  // State for API Data
+  const [fetchedData, setFetchedData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const attendanceData = {
-    2025: [
-      { month: "January", present: 25, absent: 3, leave: 2 },
-      { month: "February", present: 23, absent: 5, leave: 0 },
-      { month: "March", present: 26, absent: 2, leave: 3 },
-      { month: "April", present: 22, absent: 6, leave: 2 },
-      { month: "May", present: 27, absent: 2, leave: 1 },
-      { month: "June", present: 25, absent: 4, leave: 1 },
-      { month: "July", present: 28, absent: 1, leave: 2 },
-      { month: "August", present: 26, absent: 3, leave: 2 },
-      { month: "September", present: 25, absent: 4, leave: 1 },
-      { month: "October", present: 24, absent: 5, leave: 2 },
-      { month: "November", present: 20, absent: 8, leave: 2 },
-      { month: "December", present: 22, absent: 7, leave: 2 },
-    ],
-    2024: [
-      { month: "January", present: 22, absent: 4, leave: 1 },
-      { month: "February", present: 24, absent: 2, leave: 2 },
-      { month: "March", present: 23, absent: 3, leave: 2 },
-      { month: "April", present: 25, absent: 3, leave: 1 },
-    ],
-    2023: [
-      { month: "January", present: 20, absent: 5, leave: 3 },
-      { month: "February", present: 21, absent: 4, leave: 2 },
-    ],
-  };
+  // --- API FETCHING LOGIC ---
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get("/api/attendance/stats", {
+          params: { year: selectedYear },
+        });
+        
+        if (response.data.success) {
+          setFetchedData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        setFetchedData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchStats();
+  }, [selectedYear]);
+
+  // --- CALCULATIONS ---
   const yearlyTotals = useMemo(() => {
-    const data = attendanceData[selectedYear] || [];
-    return data.reduce(
+    // Use fetchedData instead of the hardcoded object
+    return fetchedData.reduce(
       (acc, month) => ({
         present: acc.present + month.present,
         absent: acc.absent + month.absent,
@@ -49,7 +52,7 @@ export default function AttendanceDashboard() {
       }),
       { present: 0, absent: 0, leave: 0 }
     );
-  }, [selectedYear]);
+  }, [fetchedData]);
 
   const attendancePercentage = useMemo(() => {
     const total =
@@ -58,10 +61,8 @@ export default function AttendanceDashboard() {
     return ((yearlyTotals.present / total) * 100).toFixed(1);
   }, [yearlyTotals]);
 
-  
-
   const handleMarkAttendance = () => {
-    router.push("/attendance/mark");
+    router.push("/Dashboard/Attendance/Mark");
   };
 
   const breadData = [
@@ -69,8 +70,7 @@ export default function AttendanceDashboard() {
     { name: "Attendance", href: "/Dashboard/Attendance" },
   ];
 
-  const monthData = attendanceData[selectedYear] || [];
-  const hasData = monthData.length > 0;
+  const hasData = fetchedData.length > 0;
 
   return (
     <>
@@ -78,12 +78,16 @@ export default function AttendanceDashboard() {
 
       <div className="w-full space-y-6">
         {/* Control Bar */}
-        <div className="card bg-base-100 shadow-sm">
+        <div className="card bg-base-100 shadow-sm border border-base-200">
           <div className="card-body p-4">
-            <div className="flex flex-row items-center justify-between gap-4 ">
+            <div className="flex flex-row items-center justify-between gap-4">
               <div>
                 <label className="font-medium text-sm mr-2">Year:</label>
-                <CustomDropdown value={selectedYear} setValue={setSelectedYear} dropdownMenu={years} />
+                <CustomDropdown
+                  value={selectedYear}
+                  setValue={setSelectedYear}
+                  dropdownMenu={years}
+                />
               </div>
               <button
                 onClick={handleMarkAttendance}
@@ -96,13 +100,18 @@ export default function AttendanceDashboard() {
           </div>
         </div>
 
-        {hasData ? (
+        {/* LOADING STATE */}
+        {loading ? (
+          <div className="w-full h-64 flex items-center justify-center">
+           <CustomLoader/>
+          </div>
+        ) : hasData ? (
           <>
             {/* Statistics Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="stats shadow bg-base-100">
+              <div className="stats shadow bg-base-100 border border-base-200">
                 <div className="stat">
-                  <div className="stat-title text-xs">Total Days</div>
+                  <div className="stat-title text-xs">Total Records</div>
                   <div className="stat-value text-2xl">
                     {yearlyTotals.present +
                       yearlyTotals.absent +
@@ -112,7 +121,7 @@ export default function AttendanceDashboard() {
                 </div>
               </div>
 
-              <div className="stats shadow bg-base-100">
+              <div className="stats shadow bg-base-100 border border-base-200">
                 <div className="stat">
                   <div className="stat-title text-xs">Present Days</div>
                   <div className="stat-value text-2xl text-success">
@@ -122,7 +131,7 @@ export default function AttendanceDashboard() {
                 </div>
               </div>
 
-              <div className="stats shadow bg-base-100">
+              <div className="stats shadow bg-base-100 border border-base-200">
                 <div className="stat">
                   <div className="stat-title text-xs">Absent Days</div>
                   <div className="stat-value text-2xl text-error">
@@ -132,7 +141,7 @@ export default function AttendanceDashboard() {
                 </div>
               </div>
 
-              <div className="stats shadow bg-base-100">
+              <div className="stats shadow bg-base-100 border border-base-200">
                 <div className="stat">
                   <div className="stat-title text-xs">Attendance Rate</div>
                   <div className="stat-value text-2xl text-[var(--primary-color)]">
@@ -146,7 +155,7 @@ export default function AttendanceDashboard() {
             </div>
 
             {/* Monthly Breakdown */}
-            <div className="card bg-base-100 shadow-sm">
+            <div className="card bg-base-100 shadow-sm border border-base-200">
               <div className="card-body">
                 <h2 className="font-semibold text-base mb-4">
                   Monthly Summary
@@ -155,29 +164,29 @@ export default function AttendanceDashboard() {
                 <div className="overflow-x-auto">
                   <table className="table table-md">
                     <thead className="bg-base-200">
-                      <tr >
-                        <th className="text-xs font-semibold uppercase ">
+                      <tr>
+                        <th className="text-xs font-semibold uppercase">
                           Month
                         </th>
-                        <th className="text-xs font-semibold uppercase t">
+                        <th className="text-xs font-semibold uppercase">
                           Present
                         </th>
-                        <th className="text-xs font-semibold uppercase t">
+                        <th className="text-xs font-semibold uppercase">
                           Absent
                         </th>
-                        <th className="text-xs font-semibold uppercase t">
+                        <th className="text-xs font-semibold uppercase">
                           Leave
                         </th>
-                        <th className="text-xs font-semibold uppercase t">
+                        <th className="text-xs font-semibold uppercase">
                           Total
                         </th>
-                        <th className="text-xs font-semibold uppercase t">
+                        <th className="text-xs font-semibold uppercase">
                           Rate
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {monthData.map((month, index) => {
+                      {fetchedData.map((month, index) => {
                         const total =
                           month.present + month.absent + month.leave;
                         const rate =
@@ -189,7 +198,14 @@ export default function AttendanceDashboard() {
                           <tr
                             key={index}
                             className="hover:bg-base-200 cursor-pointer"
-                            onClick={()=>{router.push("/Dashboard/Attendance/Month/"+selectedYear+"/"+month.month)}}
+                            onClick={() => {
+                              router.push(
+                                "/Dashboard/Attendance/Month/" +
+                                  selectedYear +
+                                  "/" +
+                                  month.month
+                              );
+                            }}
                           >
                             <td>
                               <span className="font-medium">{month.month}</span>
@@ -228,7 +244,7 @@ export default function AttendanceDashboard() {
 
             {/* Additional Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="card bg-base-100 shadow-sm">
+              <div className="card bg-base-100 shadow-sm border border-base-200">
                 <div className="card-body">
                   <h3 className="card-title text-sm">Leave Summary</h3>
                   <div className="stat-value text-3xl text-warning mt-2">
@@ -240,7 +256,7 @@ export default function AttendanceDashboard() {
                 </div>
               </div>
 
-              <div className="card bg-base-100 shadow-sm">
+              <div className="card bg-base-100 shadow-sm border border-base-200">
                 <div className="card-body">
                   <h3 className="card-title text-sm">Performance Status</h3>
                   <div className="mt-4">
@@ -270,7 +286,7 @@ export default function AttendanceDashboard() {
             </div>
           </>
         ) : (
-          <div className="card bg-base-100 shadow-sm">
+          <div className="card bg-base-100 shadow-sm border border-base-200">
             <div className="card-body items-center text-center py-16">
               <div className="bg-base-200 rounded-full p-6 mb-4">
                 <svg

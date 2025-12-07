@@ -6,7 +6,7 @@ import { errorToast, sucessToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 
 const AddEmployee = () => {
-  const route=useRouter()
+  const route = useRouter();
   const [isNationalityOpen, setIsNationalityOpen] = useState(false);
   const [selectedNationality, setSelectedNationality] = useState("");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -100,70 +100,81 @@ const AddEmployee = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Validate form
-  if (!validateForm()) {
-    return;
-  }
+    e.preventDefault();
 
-  setIsLoading(true);
-
-  try {
-    const response = await axios.post('/api/employee/addEmployee', formData);
-
-    const success = response.data.success;
-
-    if (!success) {
-      errorToast(response.data.message || "Something went wrong");
-      setIsLoading(false); 
+    // Validate form
+    if (!validateForm()) {
       return;
-    } 
+    }
 
-    sucessToast(response.data.message || "Employee Added Successfully");
-    
-    // Reset form
-    setFormData({
-      name: "",
-      iqamaNumber: "",
-      phone: "",
-      nationality: "",
-      role: "",
-      joiningDate: "",
-      salary: "000",
-      status: true
-    });
-    setSelectedNationality("");
-    setSelectedStatus("Active");
-    setErrors({});
-    
-  } catch (error) {
-    console.error('Error adding employee:', error);
-    errorToast(error.response?.data?.message || 'Failed to add employee. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
+
+    // --- EDITED SECTION START ---
+    // Calculate today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+
+    // Create a payload object. Use existing joiningDate, or fallback to 'today'
+    const dataToSend = {
+      ...formData,
+      joiningDate: formData.joiningDate || today
+    };
+    // --- EDITED SECTION END ---
+
+    try {
+      // Note: We use dataToSend here instead of formData
+      const response = await axios.post('/api/employee/addEmployee', dataToSend);
+
+      const success = response.data.success;
+
+      if (!success) {
+        errorToast(response.data.message || "Something went wrong");
+        setIsLoading(false);
+        return;
+      }
+
+      sucessToast(response.data.message || "Employee Added Successfully");
+
+      // Reset form
+      setFormData({
+        name: "",
+        iqamaNumber: "",
+        phone: "",
+        nationality: "",
+        role: "",
+        joiningDate: "",
+        salary: "000",
+        status: true
+      });
+      setSelectedNationality("");
+      setSelectedStatus("Active");
+      setErrors({});
+
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      errorToast(error.response?.data?.message || 'Failed to add employee. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="py-8 px-4">
       <div className="max-w-6xl mx-auto">
-            <div className="mb-6 mx-4 flex items-center gap-4 justify-between">
-                  <div>
-                  
-                    <p className="text-sm text-base-content/60 mt-1 hidden md:block">
-                      Add employee information and details
-                    </p>
-                  </div>
-                  <button
-                    onClick={()=>{route.back()}}
-                    className="btn btn-ghost btn-sm gap-2"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                  </button>
-                  
-                </div>
+        <div className="mb-6 mx-4 flex items-center gap-4 justify-between">
+          <div>
+            <p className="text-sm text-base-content/60 mt-1 hidden md:block">
+              Add employee information and details
+            </p>
+          </div>
+          <button
+            onClick={() => { route.back() }}
+            className="btn btn-ghost btn-sm gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+
+        </div>
         <div className="">
           <div className="p-4">
             {/* Form */}
@@ -237,7 +248,7 @@ const AddEmployee = () => {
                     </span>
                     <ChevronDown className={`w-5 h-5 transition-transform ${isNationalityOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {isNationalityOpen && (
                     <div className="absolute z-50 w-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {nationalities.map((nationality) => (
@@ -279,7 +290,7 @@ const AddEmployee = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-base-content mb-2">
-                    Joining Date <span className="text-base-content/50">(Optional)</span>
+                    Joining Date <span className="text-base-content/50">(Defaults to Today)</span>
                   </label>
                   <input
                     name="joiningDate"
@@ -324,7 +335,7 @@ const AddEmployee = () => {
                       </span>
                       <ChevronDown className={`w-5 h-5 transition-transform ${isStatusOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    
+
                     {isStatusOpen && (
                       <div className="absolute z-50 w-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg">
                         {statuses.map((status) => (

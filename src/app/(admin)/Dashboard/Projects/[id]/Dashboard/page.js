@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import DashboardPageHeader from '@/Components/DashboardPageHeader';
 import CustomLoader from '@/Components/CustomLoader';
+import { errorToast, successToast } from '@/lib/toast';
 
 // --- 1. LOCAL SUB-COMPONENTS ---
 
@@ -263,7 +264,17 @@ export default function ProjectDashboardPage() {
         description: expenseForm.description.trim(),
         amount: parseFloat(expenseForm.amount)
       });
-      setProject(response.data);
+
+      const success= response.data.success
+      if(!success)
+      {
+        errorToast(response.data.message || "Something went wrong")
+        setIsAddingExpense(false); 
+        return;
+      }
+
+      successToast(response.data.message || "Expense add successfully");
+      setProject(response.data.data);
       setExpenseForm({ date: new Date().toISOString().split('T')[0], description: '', amount: '' });
       setExpenseErrors({});
     } catch (error) {
@@ -285,7 +296,16 @@ export default function ProjectDashboardPage() {
         description: incomeForm.description.trim(),
         amount: parseFloat(incomeForm.amount)
       });
-      setProject(response.data);
+      const success= response.data.success
+      if(!success)
+      {
+        errorToast(response.data.message || "Something went wrong")
+        setIsAddingIncome(false); 
+        return;
+      }
+
+      successToast(response.data.message || "Income added successfully");
+      setProject(response.data.data);
       setIncomeForm({ date: new Date().toISOString().split('T')[0], description: '', amount: '' });
       setIncomeErrors({});
     } catch (error) {
@@ -313,8 +333,17 @@ export default function ProjectDashboardPage() {
       } else {
          response = await axios.delete(`/api/project/${projectId}/incomes/${deleteModal.id}`);
       }
-      
-      setProject(response.data); 
+      const success = response.data.success
+
+       
+      if(!success)
+      {
+        errorToast(response.data.message || "something went wrong")
+         setIsDeleting(false);
+        return
+      }
+      successToast(response.data.message || "record deleted successfully ")
+      setProject(response.data.data); 
       setDeleteModal({ isOpen: false, id: null, type: null }); 
     } catch (error) {
       console.error(`Error deleting ${deleteModal.type}:`, error);

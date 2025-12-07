@@ -1,53 +1,93 @@
 'use client';
-import { FolderKanban, Users2, Package, CalendarCheck } from 'lucide-react';
-import React from 'react'
+import axios from 'axios';
+import { FolderKanban, Users2, Package } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import CountUp from 'react-countup';
 
 const DashboardTopStats = () => {
+
+  const [projectsCount, setProjectsCount] = useState(0);
+  const [employeesCount, setEmployeesCount] = useState(0);
+  const [assetsCount, setAssetsCount] = useState(0);
+
+  useEffect(() => {
+    fetchCounts();
+  }, []);
+
+  const fetchCounts = async () => {
+    try {
+      const response = await axios.get('/api/top-stats');
+      const data = response.data;
+      if (data.success) {
+        setProjectsCount(data.data.projectCount || 0);
+        setEmployeesCount(data.data.employeeCount || 0);
+        setAssetsCount(data.data.assetCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching top stats counts:', error);
+    }
+  };
+
   return (
-    <div className="stats bg-base-100 w-full stats-vertical md:stats-horizontal overflow-hidden shadow">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
       
-      {/* Projects */}
-      <div className="stat">
-        <div className="stat-figure bg-base-300 rounded-md p-2">
-          <FolderKanban className="w-8 h-8 text-[var(--primary-color)]" />
-        </div>
-        <div className="pb-1">Projects</div>
-        <div className="stat-value">
-          <CountUp start={0} end={11} duration={2.75} />
-        </div>
-      </div>
-
-      {/* Employees */}
-      <div className="stat">
-        <div className="stat-figure bg-base-300 rounded-md p-2">
-          <Users2 className="w-8 h-8 text-[var(--primary-color)]" />
-        </div>
-        <div className="pb-1">Employees</div>
-        <div className="stat-value">
-          <CountUp start={0} end={110} duration={2.75} />
+      {/* Projects Card */}
+      <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 p-4 transition-all hover:shadow-md">
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="text-xs text-base-content/60 uppercase font-bold tracking-wider mb-1">
+              Total Projects
+            </div>
+            <div className="text-2xl font-bold text-base-content">
+              <CountUp start={0} end={projectsCount} duration={2.5} separator="," />
+            </div>
+            <div className="text-xs text-base-content/60 mt-1">
+              Active & Completed
+            </div>
+          </div>
+          <div className="p-2 bg-base-200 rounded-lg text-[var(--primary-color)]">
+            <FolderKanban className="w-6 h-6" />
+          </div>
         </div>
       </div>
 
-      {/* Assets */}
-      <div className="stat">
-        <div className="stat-figure bg-base-300 rounded-md p-2">
-          <Package className="w-8 h-8 text-[var(--primary-color)]" />
-        </div>
-        <div className="pb-1">Assets</div>
-        <div className="stat-value">
-          <CountUp start={0} end={20} duration={2.75} />
+      {/* Employees Card */}
+      <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 p-4 transition-all hover:shadow-md">
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="text-xs text-base-content/60 uppercase font-bold tracking-wider mb-1">
+              Total Employees
+            </div>
+            <div className="text-2xl font-bold text-base-content">
+              <CountUp start={0} end={employeesCount} duration={2.5} separator="," />
+            </div>
+            <div className="text-xs text-base-content/60 mt-1">
+              Registered workforce
+            </div>
+          </div>
+          <div className="p-2 bg-base-200 rounded-lg text-[var(--primary-color)]">
+            <Users2 className="w-6 h-6" />
+          </div>
         </div>
       </div>
 
-      {/* Today Attendance */}
-      <div className="stat">
-        <div className="stat-figure bg-base-300 rounded-md p-2">
-          <CalendarCheck className="w-8 h-8 text-[var(--primary-color)]" />
-        </div>
-        <div className="pb-1">Today Attendance</div>
-        <div className="stat-value">
-          <CountUp start={0} end={80} duration={2.75} />
+      {/* Assets Card */}
+      <div className="bg-base-100 rounded-xl shadow-sm border border-base-300 p-4 transition-all hover:shadow-md">
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="text-xs text-base-content/60 uppercase font-bold tracking-wider mb-1">
+              Total Assets
+            </div>
+            <div className="text-2xl font-bold text-base-content">
+              <CountUp start={0} end={assetsCount} duration={2.5} separator="," />
+            </div>
+            <div className="text-xs text-base-content/60 mt-1">
+              Machinery & Vehicles
+            </div>
+          </div>
+          <div className="p-2 bg-base-200 rounded-lg text-[var(--primary-color)]">
+            <Package className="w-6 h-6" />
+          </div>
         </div>
       </div>
 

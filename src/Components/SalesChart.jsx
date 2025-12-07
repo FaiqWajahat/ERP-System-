@@ -1,5 +1,6 @@
+
 'use client'
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -9,104 +10,128 @@ import {
   Tooltip,
 } from "recharts";
 
-const weeklyData = [
-  { name: "Mon", sales: 500 },
-  { name: "Tue", sales: 700 },
-  { name: "Wed", sales: 600 },
-  { name: "Thu", sales: 800 },
-  { name: "Fri", sales: 750 },
-  { name: "Sat", sales: 900 },
-  { name: "Sun", sales: 650 },
-];
+// --- Color Variables from RevenueChart ---
+const primaryColor = "#A99984"; 
+const tooltipStyle = {
+  backgroundColor: '#fff',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb', // Tailwind gray-200
+  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+};
 
-const monthlyData = [
-  { name: "Jan", sales: 4000 },
-  { name: "Feb", sales: 3000 },
-  { name: "Mar", sales: 2000 },
-  { name: "Apr", sales: 2780 },
-  { name: "May", sales: 1890 },
-  { name: "Jun", sales: 2390 },
-  { name: "Jul", sales: 3490 },
-  { name: "Aug", sales: 4200 },
-  { name: "Sep", sales: 3800 },
-  { name: "Oct", sales: 4500 },
-  { name: "Nov", sales: 4700 },
-  { name: "Dec", sales: 5200 },
-];
+export default function AttendanceChart() {
+  const [view, setView] = useState("month"); // 'month' or 'year'
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-export default function SalesChart() {
-  const [view, setView] = useState("month");
-
-  const data = view === "month" ? monthlyData : weeklyData;
+  // Fetch Data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/attendance/chart?view=${view}`);
+        const result = await res.json();
+        if (result.success) {
+          setChartData(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch chart data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [view]);
 
   return (
     <div className="w-full max-w-full mx-auto rounded-xl shadow-lg p-4 lg:p-6 bg-base-100 text-base-content text-sm transition-colors duration-300">
       
-      {/* Toggle Buttons */}
+      {/* Header + Switch */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <h2 className="text-lg font-semibold">
-          {view === "month" ? "Monthly Attendance" : "Weekly Attendance"}
-        </h2>
+        <div>
+          <h2 className="text-lg font-bold">
+            {view === "month" ? "Daily Attendance" : "Monthly Man-Days"}
+          </h2>
+          <p className="text-xs text-base-content/60 mt-1">
+            {view === "month" ? "Headcount per day" : "Total days worked per month"}
+          </p>
+        </div>
 
-        <div className="flex bg-base-300 dark:bg-base-200 rounded-full p-1 transition-colors duration-300">
+        {/* Toggle Buttons (Matching RevenueChart Styles) */}
+        <div className="flex bg-base-300 rounded-full p-1">
           <button
-            onClick={() => setView("week")}
-            className={`px-4 py-1 rounded-full font-medium text-sm transition-all ${
-              view === "week" ? "bg-[#A99984] text-white shadow" : "text-base-content"
-            }`}
+            onClick={() => setView("month")}
+            className={`px-4 py-1 rounded-full font-semibold text-sm transition-all 
+              ${view === 'month' ? 'text-white' : 'text-base-content'}`}
+            style={view === 'month' ? { backgroundColor: primaryColor } : {}}
           >
-            Week
+            Month
           </button>
 
           <button
-            onClick={() => setView("month")}
-            className={`px-4 py-1 rounded-full font-medium text-sm transition-all ${
-              view === "month" ? "bg-[#A99984] text-white shadow" : "text-base-content"
-            }`}
+            onClick={() => setView("year")}
+            className={`px-4 py-1 rounded-full font-semibold text-sm transition-all 
+              ${view === 'year' ? 'text-white' : 'text-base-content'}`}
+            style={view === 'year' ? { backgroundColor: primaryColor } : {}}
           >
-            Month
+            Year
           </button>
         </div>
       </div>
 
-      {/* Bar Chart */}
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={data} margin={{ top: 20, right: 0, left: 0, bottom: 5 }}>
+      {/* Chart Area */}
+      <div className="h-[340px] w-full">
+        {loading ? (
+           // --- SKELETON LOADER ---
+           <div className="w-full h-full flex items-end justify-between gap-1 sm:gap-2 px-2 pb-6 animate-pulse">
+             {[...Array(view === 'month' ? 15 : 12)].map((_, i) => (
+               <div 
+                 key={i} 
+                 className="w-full bg-base-300/70 rounded-t-md"
+                 style={{ 
+                    height: `${((i * 37) % 60) + 20}%` 
+                 }}
+               ></div>
+             ))}
+           </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 5 }}>
+              <XAxis
+                dataKey="name"
+                stroke="currentColor" 
+                tick={{ fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                interval={view === 'month' ? 1 : 0} 
+              />
 
-          <XAxis
-            dataKey="name"
-            stroke="var(--text-secondary)"
-            tick={{ fontSize: 12 }}
-            axisLine={false}
-            tickLine={false}
-          />
+              <YAxis
+                stroke="currentColor"
+                tick={{ fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
 
-          <YAxis
-            stroke="var(--text-secondary)"
-            tick={{ fontSize: 12 }}
-            axisLine={false}
-            tickLine={false}
-          />
+              <Tooltip
+                cursor={{ fill: primaryColor, opacity: 0.1 }} // Subtle highlight
+                contentStyle={tooltipStyle}
+              itemStyle={{ color: primaryColor, fontWeight: 600 }}
+                formatter={(value) => [value, "Present"]}
+              />
 
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--tooltip-bg)",
-              borderRadius: "8px",
-              border: "1px solid var(--tooltip-border)",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-            }}
-            itemStyle={{ color: "#A99984", fontWeight: 600 }}
-            cursor={{ fill: "rgba(0,0,0,0)" }}
-          />
-
-          <Bar
-            dataKey="sales"
-            fill="#A99984"
-            radius={[8, 8, 0, 0]}
-            barSize={32}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+              <Bar
+                dataKey="present"
+                fill={primaryColor}
+                radius={[6, 6, 0, 0]}
+                barSize={view === 'month' ? 12 : 32} 
+                animationDuration={1000}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
     </div>
   );
 }

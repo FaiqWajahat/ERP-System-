@@ -3,7 +3,7 @@
 ;
 import { create } from "zustand";
 import { Palette, Check, Search, X } from "lucide-react";
-import DashboardHeader from "@/Components/DashboardHeader";
+
 import DashboardPageHeader from "@/Components/DashboardPageHeader";
 
 // Zustand Store
@@ -83,7 +83,7 @@ export default function ThemeSwitcherPage() {
         </header>
 
         {/* Search */}
-        <div className="mb-7 max-w-md mx-auto">
+        {/* <div className="mb-7 max-w-md mx-auto">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
             <input
@@ -103,7 +103,7 @@ export default function ThemeSwitcherPage() {
               </button>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Theme Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-7">

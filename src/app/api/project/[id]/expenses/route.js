@@ -1,32 +1,63 @@
+
 import connectDB from '@/lib/mongodb';
 import Project from '@/models/project';
 import { NextResponse } from 'next/server';
-
 
 export async function POST(req, { params }) {
   try {
     await connectDB();
     const { id } = params;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Project ID is required" },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
-    console.log(body.date, body.description, body.amount)
+    const { description, amount, date } = body;
+
+    // Basic validation
+    if (!description || !amount || !date) {
+      return NextResponse.json(
+        { success: false, message: "Description, amount, and date are required" },
+        { status: 400 }
+      );
+    }
 
     const updatedProject = await Project.findByIdAndUpdate(
       id,
-      { 
-        $push: { 
+      {
+        $push: {
           expenses: {
-            description: body.description,
-            amount: body.amount,
-            date: body.date,
+            description,
+            amount,
+            date,
             createdAt: new Date()
-          } 
-        } 
+          }
+        }
       },
-      { new: true } 
+      { new: true }
     );
 
-    return NextResponse.json(updatedProject);
+    if (!updatedProject) {
+      return NextResponse.json(
+        { success: false, message: "Project not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Expense added successfully",
+      data: updatedProject
+    });
+
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 500 }
+    );
   }
 }
