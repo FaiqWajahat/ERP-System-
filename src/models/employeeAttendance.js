@@ -2,38 +2,33 @@ import mongoose from "mongoose";
 
 const attendanceSchema = new mongoose.Schema(
   {
-   
     employeeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
       required: true,
-      index: true, 
+      index: true,
     },
 
-   
     employeeName: { type: String, required: true },
     iqama: { type: String, required: true },
 
-    
     date: {
       type: Date,
       required: true,
-      index: true, 
+      index: true,
     },
 
-    
     status: {
       type: String,
       enum: ["Present", "Absent", "Leave", "Not Marked"],
       default: "Not Marked",
     },
 
-    
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
-     
-      default: null, 
+
+      default: null,
     },
 
     projectName: {
@@ -48,4 +43,5 @@ const attendanceSchema = new mongoose.Schema(
 attendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
 
 // Prevent Next.js hot-reload model overwrite error
-export const Attendance = mongoose.models.Attendance || mongoose.model("Attendance", attendanceSchema);
+export const Attendance =
+  mongoose.models.Attendance || mongoose.model("Attendance", attendanceSchema);

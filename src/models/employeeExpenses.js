@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-// ==================== EXPENSE SCHEMA ====================
+
 const ExpenseSchema = new mongoose.Schema(
   {
     employeeId: {

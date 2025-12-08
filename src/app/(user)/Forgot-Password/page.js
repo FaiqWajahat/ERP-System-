@@ -136,7 +136,7 @@ export default function ForgotPassword() {
                 onClick={() => setIsEmailSent(false)} 
                 className="mt-4 text-xs text-gray-400 hover:underline"
               >
-                Did not receive it? Try again
+                Did not receive it? Try again 
               </button>
             </div>
           )}
