@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
@@ -30,8 +31,10 @@ const API_ENDPOINTS = {
   GET_PROJECTS: "/api/attendance/project",
 };
 
-// --- DROPDOWNS (Kept same as previous version) ---
-const ModernProjectDropdown = ({ value, onChange, projects }) => {
+// --- DROPDOWNS ---
+
+// UPDATED: Added 'disabled' prop to handle logic
+const ModernProjectDropdown = ({ value, onChange, projects, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
@@ -50,30 +53,42 @@ const ModernProjectDropdown = ({ value, onChange, projects }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close dropdown if it becomes disabled while open
+  useEffect(() => {
+    if (disabled) setIsOpen(false);
+  }, [disabled]);
+
   return (
     <div className="relative w-48" ref={dropdownRef}>
       <div
         onClick={() => {
-          setIsOpen(!isOpen);
-          setSearchTerm("");
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            setSearchTerm("");
+          }
         }}
         className={`
           flex items-center justify-between w-full px-3 py-2 text-xs font-medium 
-          border rounded-md cursor-pointer transition-all duration-200
-          ${value 
-            ? "bg-[var(--primary-color)]/5 border-[var(--primary-color)] text-[var(--primary-color)]" 
-            : "bg-base-100 border-base-300 hover:border-base-400 text-base-content/60"
+          border rounded-md transition-all duration-200
+          ${disabled 
+            ? "bg-base-200 border-base-200 text-base-content/30 cursor-not-allowed" 
+            : "cursor-pointer " + (value 
+                ? "bg-[var(--primary-color)]/5 border-[var(--primary-color)] text-[var(--primary-color)]" 
+                : "bg-base-100 border-base-300 hover:border-base-400 text-base-content/60")
           }
         `}
       >
         <span className="truncate flex items-center gap-2">
            <Building className="w-3.5 h-3.5" />
-           {value ? value.name : "Assign Project"}
+           {value ? value.name : (disabled ? "N/A" : "Assign Project")}
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        {!disabled && (
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        )}
       </div>
 
-      {isOpen && (
+      {/* Dropdown Menu - Added z-50 and shadow-xl */}
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-64 mt-1 bg-base-100 border border-base-200 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-100 origin-top-left left-0">
           <div className="p-2 border-b border-base-100 sticky top-0 bg-base-100 rounded-t-lg">
             <div className="relative">
@@ -160,6 +175,7 @@ const ModernStatusDropdown = ({ value, onChange }) => {
         {!value && <ChevronDown className="w-3.5 h-3.5 opacity-50" />}
       </button>
 
+      {/* Dropdown Menu - Added z-50 for stacking */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-base-100 border border-base-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100">
           {["Present", "Absent", "Leave"].map((option) => {
@@ -209,13 +225,11 @@ export default function MarkAttendancePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [attendanceMarked, setAttendanceMarked] = useState(false);
 
-  // Initial Load
   useEffect(() => {
     fetchEmployees();
     fetchProjects();
   }, []);
 
-  // Date Change
   useEffect(() => {
     if (selectedDate && employees.length > 0) {
       fetchAttendanceForDate(selectedDate);
@@ -302,8 +316,18 @@ export default function MarkAttendancePage() {
       )
     : 0;
 
+  // UPDATED: Logic to clear project if not Present
   const updateStatus = (id, status) => {
     setAttendance((prev) => ({ ...prev, [id]: status }));
+    
+    // If status changes to anything other than Present, remove the project assignment
+    if (status !== 'Present') {
+      setProjectAssignments((prev) => {
+        const newAssignments = { ...prev };
+        delete newAssignments[id];
+        return newAssignments;
+      });
+    }
   };
 
   const updateProject = (id, project) => {
@@ -316,6 +340,11 @@ export default function MarkAttendancePage() {
       newAtt[emp._id] = status;
     });
     setAttendance(newAtt);
+    
+    // If bulk marking anything other than Present, clear all projects
+    if (status !== 'Present') {
+      setProjectAssignments({});
+    }
   };
 
   const clearAllMarks = () => {
@@ -330,13 +359,17 @@ export default function MarkAttendancePage() {
       .map((emp) => {
         const status = attendance[emp._id];
         if (!status) return null;
+        
+        // Double check safeguard: If not present, ensure project is null
+        const assignedProject = status === 'Present' ? projectAssignments[emp._id] : null;
+
         return {
           employeeId: emp._id,
           employeeName: emp.name,
           iqama: emp.iqamaNumber,
           status: status,
-          projectId: projectAssignments[emp._id]?._id || null,
-          projectName: projectAssignments[emp._id]?.name || "No project",
+          projectId: assignedProject?._id || null,
+          projectName: assignedProject?.name || "No project",
         };
       })
       .filter(Boolean);
@@ -375,7 +408,6 @@ export default function MarkAttendancePage() {
   const canEdit = !attendanceMarked || isEditMode;
   const breadData = [{ name: "Dashboard", href: "/Dashboard" }, { name: "Mark Attendance", href: "/Dashboard/Attendance/Mark" }];
 
-  // --- STAT CARD COMPONENT (Reused for consistency) ---
   const StatCard = ({ title, value, subtext, colorClass, }) => (
     <div className="card bg-base-100 border border-base-200 shadow-sm p-4  transition-shadow">
       <div className="flex items-start justify-between">
@@ -401,92 +433,37 @@ export default function MarkAttendancePage() {
       <div className="w-full pb-20"> 
         <div className="max-w-7xl mx-auto space-y-6">
 
-          {/* 1. PROFESSIONAL STATS GRID (Updated) */}
+          {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-             <StatCard 
-               title="Total Staff" 
-               value={stats.total} 
-               subtext="Active Employees"
-               icon={Users} 
-               colorClass="text-base-content" 
-               bgClass="bg-base-200"
-             />
-             <StatCard 
-               title="Present" 
-               value={stats.present} 
-               subtext="Checked In"
-               icon={CheckCircle} 
-               colorClass="text-success" 
-               bgClass="bg-success/10"
-             />
-             <StatCard 
-               title="Absent" 
-               value={stats.absent} 
-               subtext="Not Arrived"
-               icon={XCircle} 
-               colorClass="text-error" 
-               bgClass="bg-error/10"
-             />
-             <StatCard 
-               title="On Leave" 
-               value={stats.leave} 
-               subtext="Approved Leave"
-               icon={Clock} 
-               colorClass="text-warning" 
-               bgClass="bg-warning/10"
-             />
-             
-             {/* Progress Card (Custom Layout) */}
+             <StatCard title="Total Staff" value={stats.total} subtext="Active Employees" icon={Users} colorClass="text-base-content" bgClass="bg-base-200"/>
+             <StatCard title="Present" value={stats.present} subtext="Checked In" icon={CheckCircle} colorClass="text-success" bgClass="bg-success/10"/>
+             <StatCard title="Absent" value={stats.absent} subtext="Not Arrived" icon={XCircle} colorClass="text-error" bgClass="bg-error/10"/>
+             <StatCard title="On Leave" value={stats.leave} subtext="Approved Leave" icon={Clock} colorClass="text-warning" bgClass="bg-warning/10"/>
              <div className="card bg-base-100 border border-base-200 shadow-sm p-4 col-span-2 md:col-span-1">
                 <div className="flex justify-between items-start mb-2">
                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/50">
-                        Completion
-                      </span>
-                      <div className="text-2xl font-bold text-[var(--primary-color)]">
-                        {completionPercentage}%
-                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/50">Completion</span>
+                      <div className="text-2xl font-bold text-[var(--primary-color)]">{completionPercentage}%</div>
                    </div>
                    <div className="p-2 rounded-lg bg-[var(--primary-color)]/10">
                       <PieChart className="w-5 h-5 text-[var(--primary-color)]" />
                    </div>
                 </div>
-                <progress 
-                  className="progress progress-primary w-full h-1.5" 
-                  value={completionPercentage} 
-                  max="100"
-                ></progress>
+                <progress className="progress progress-primary w-full h-1.5" value={completionPercentage} max="100"></progress>
              </div>
           </div>
 
-          {/* 2. STICKY ACTION HEADER (Sticks to top of content, under page header) */}
+          {/* Action Header */}
           <div className="sticky top-0 z-30 bg-base-100 border border-base-200 rounded-lg  shadow-sm p-3 flex flex-col md:flex-row items-center justify-between gap-4 transition-all">
-             
-             {/* Left: Date Picker */}
              <div className="flex items-center gap-3 w-full md:w-auto bg-base-200/50 p-2 rounded-lg border border-base-200/50">
                 <Calendar className="w-4 h-4 text-[var(--primary-color)]"/>
-                <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer"
-                />
+                <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer"/>
              </div>
-
-             {/* Center: Search */}
              <div className="relative w-full md:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
-                <input
-                  type="text"
-                  placeholder="Search name or iqama..."
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input input-sm w-full pl-10 h-10 bg-base-200/50 focus:bg-base-100 transition-colors border-transparent focus:border-[var(--primary-color)] rounded-lg"
-                />
+                <input type="text" placeholder="Search name or iqama..." onChange={(e) => setSearchQuery(e.target.value)} className="input input-sm w-full pl-10 h-10 bg-base-200/50 focus:bg-base-100 transition-colors border-transparent focus:border-[var(--primary-color)] rounded-lg"/>
              </div>
-
-             {/* Right: Actions */}
              <div className="flex gap-2 w-full md:w-auto">
-                 {/* Bulk Actions Dropdown */}
                  <div className="dropdown dropdown-end">
                     <button tabIndex={0} className="btn btn-sm btn-outline gap-2 h-10 w-full md:w-auto border-base-300">
                        <Filter className="w-4 h-4"/> Bulk
@@ -498,34 +475,25 @@ export default function MarkAttendancePage() {
                        <li className="border-t mt-1 pt-1"><a onClick={clearAllMarks} className="text-xs">Clear All</a></li>
                     </ul>
                  </div>
-                 
-                 {/* Save Button */}
-                 <button 
-                     onClick={handleSave} 
-                     disabled={Object.keys(attendance).length === 0 || isSaving || !canEdit}
-                     className="btn btn-sm bg-[var(--primary-color)] text-white hover:opacity-90 h-10 w-auto shadow-md border-none"
-                  >
-                     {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Save className="w-4 h-4 mr-1"/>}
-                     Save
-                  </button>
+                 <button onClick={handleSave} disabled={Object.keys(attendance).length === 0 || isSaving || !canEdit} className="btn btn-sm bg-[var(--primary-color)] text-white hover:opacity-90 h-10 w-auto shadow-md border-none">
+                     {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Save className="w-4 h-4 mr-1"/>} Save
+                 </button>
              </div>
           </div>
 
-          {/* 3. Messages */}
+          {/* Status Messages */}
           {isLoading && (
             <div className="alert alert-info shadow-sm text-xs rounded-lg animate-pulse">
               <span className="loading loading-spinner loading-sm"></span>
               <span>Loading data...</span>
             </div>
           )}
-
           {showSuccess && (
             <div className="alert alert-success shadow-sm text-xs rounded-lg">
               <CheckCircle className="w-5 h-5" />
               <span>Attendance saved for {new Date(selectedDate).toLocaleDateString()}!</span>
             </div>
           )}
-
           {!isLoading && attendanceMarked && !isEditMode && (
             <div className="alert bg-yellow-50 text-yellow-800 border-yellow-200 shadow-sm text-xs rounded-lg flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -538,66 +506,72 @@ export default function MarkAttendancePage() {
             </div>
           )}
 
-          {/* 4. Table */}
+          {/* Table */}
           {!isLoading && canEdit && (
-             <div className="bg-base-100 border border-base-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto min-h-[400px]">
+             // UPDATED: Removed overflow-hidden from this container so dropdowns can pop out
+             <div className="bg-base-100 border border-base-200 rounded-xl shadow-sm">
+                <div className="overflow-x-auto min-h-[400px] rounded-xl">
                    <table className="table w-full">
-                      <thead className="bg-base-200/50 text-xs uppercase font-bold text-base-content/60">
+                      {/* Added rounded corners to thead since we removed overflow-hidden from parent */}
+                      <thead className="bg-base-200/50 text-xs uppercase font-bold text-base-content/60 rounded-t-xl">
                          <tr>
-                            <th className="w-12 text-center">#</th>
+                            <th className="w-12 text-center rounded-tl-xl">#</th>
                             <th>Employee Details</th>
                             <th>Current Status</th>
                             <th>Project Assignment</th>
-                            <th className="w-16 text-center">Clear</th>
+                            <th className="w-16 text-center rounded-tr-xl">Clear</th>
                          </tr>
                       </thead>
                       <tbody className="divide-y divide-base-100">
                          {filteredEmployees.length === 0 ? (
-                            <tr><td colSpan="5" className="text-center py-10 text-base-content/40">No employees found matching search.</td></tr>
+                           <tr><td colSpan="5" className="text-center py-10 text-base-content/40">No employees found matching search.</td></tr>
                          ) : (
-                            filteredEmployees.map((emp, i) => (
-                               <tr key={emp._id} className="hover:bg-base-50 transition-colors group">
-                                  <td className="text-center text-xs text-base-content/50">{i + 1}</td>
-                                  <td>
-                                     <div className="flex items-center gap-3">
-                                        <div className="avatar">
-                                           <Avatar name={emp.name} size="md"/>
-                                        </div>
-                                        <div>
-                                           <div className="font-bold text-sm text-base-content">{emp.name}</div>
-                                           <div className="text-xs text-base-content/50 font-mono">{emp.iqamaNumber}</div>
-                                        </div>
-                                     </div>
-                                  </td>
-                                  <td>
-                                     <ModernStatusDropdown 
-                                        value={attendance[emp._id]} 
-                                        onChange={(status) => updateStatus(emp._id, status)}
-                                     />
-                                  </td>
-                                  <td>
-                                     <ModernProjectDropdown 
-                                        value={projectAssignments[emp._id]}
-                                        projects={projects}
-                                        onChange={(project) => updateProject(emp._id, project)}
-                                     />
-                                  </td>
-                                  <td className="text-center">
-                                     {(attendance[emp._id] || projectAssignments[emp._id]) && (
-                                        <button 
+                           filteredEmployees.map((emp, i) => (
+                              <tr key={emp._id} className="hover:bg-base-50 transition-colors group">
+                                 <td className="text-center text-xs text-base-content/50">{i + 1}</td>
+                                 <td>
+                                    <div className="flex items-center gap-3">
+                                       <div className="avatar">
+                                          <Avatar name={emp.name} size="md"/>
+                                       </div>
+                                       <div>
+                                          <div className="font-bold text-sm text-base-content">{emp.name}</div>
+                                          <div className="text-xs text-base-content/50 font-mono">{emp.iqamaNumber}</div>
+                                       </div>
+                                    </div>
+                                 </td>
+                                 {/* Status Dropdown */}
+                                 <td className="relative">
+                                    <ModernStatusDropdown 
+                                       value={attendance[emp._id]} 
+                                       onChange={(status) => updateStatus(emp._id, status)}
+                                    />
+                                 </td>
+                                 {/* Project Dropdown */}
+                                 <td className="relative">
+                                    <ModernProjectDropdown 
+                                       value={projectAssignments[emp._id]}
+                                       projects={projects}
+                                       // UPDATED: Disabled if status is NOT Present
+                                       disabled={attendance[emp._id] !== 'Present'} 
+                                       onChange={(project) => updateProject(emp._id, project)}
+                                    />
+                                 </td>
+                                 <td className="text-center">
+                                    {(attendance[emp._id] || projectAssignments[emp._id]) && (
+                                       <button 
                                           onClick={() => {
                                              setAttendance(prev => { const c={...prev}; delete c[emp._id]; return c; });
                                              setProjectAssignments(prev => { const c={...prev}; delete c[emp._id]; return c; });
                                           }}
                                           className="btn btn-ghost btn-xs text-base-content/30 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                           <Trash2 className="w-4 h-4" />
-                                        </button>
-                                     )}
-                                  </td>
-                               </tr>
-                            ))
+                                       >
+                                          <Trash2 className="w-4 h-4" />
+                                       </button>
+                                    )}
+                                 </td>
+                              </tr>
+                           ))
                          )}
                       </tbody>
                    </table>

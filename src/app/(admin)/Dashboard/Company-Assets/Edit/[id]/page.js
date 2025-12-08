@@ -12,10 +12,7 @@ const Page = () => {
 
   const breadData = [
     { name: "Dashboard", href: "/Dashboard" },
-    {
-      name: "Employees",
-      href: "/Dashboard/Employees",
-    },
+  
     {
       name: "Assets",
       href: `/Dashboard/Company-Assets`,

@@ -19,6 +19,7 @@ import { useFontStore } from "@/stores/fontStore";
 import axios from "axios";
 import {useUserStore} from '@/stores/userStore';
 
+
 // Configure Inter font (you forgot this one!)
 const inter = Inter({
   subsets: ["latin"],
@@ -172,8 +173,8 @@ export default function AdminLayout({ children }) {
 
         {/* Footer */}
         <footer className="h-10 flex items-center justify-center bg-base-100 text-xs text-gray-500 shrink-0">
-          {'Made with love by{" "}'}
-          <span className="text-[#0885f3] ml-1 font-bold">Pixvion</span>
+          {'Made with love by'}
+          <span className="text-[#0885f3] ml-1 font-bold">Faiq Wajahat</span>
         </footer>
       </div>
     </div>
